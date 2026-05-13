@@ -251,3 +251,9 @@ coverage/
 .sisyphus
 AGENTS.md
 CLAUDE.md
+# Stray third-party clone
+pyairbnb/
+
+# Un-ignore our source lib/ subdirectories (Python template's `lib/` shadowed them)
+!src/lib/
+!web/src/lib/

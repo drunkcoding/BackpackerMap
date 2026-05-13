@@ -1,0 +1,55 @@
+{
+  "name": "backpackermap",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted map combining AllTrails GPX, Airbnb saved, Booking saved, with driving distances.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit && tsc -p web/tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "build": "tsc -p tsconfig.build.json && npm --workspace web run build",
+    "dev": "node --import tsx/esm src/server/server.ts",
+    "dev:web": "npm --workspace web run dev",
+    "ingest:trails": "node --import tsx/esm src/ingest/cli.ts trails",
+    "ingest:airbnb": "node --import tsx/esm src/ingest/cli.ts airbnb",
+    "ingest:booking": "node --import tsx/esm src/ingest/cli.ts booking",
+    "ingest:all": "npm run ingest:trails && npm run ingest:airbnb && npm run ingest:booking"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.10.0",
+    "@types/supertest": "^7.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "supertest": "^7.2.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@tmcw/togeojson": "^7.1.2",
+    "@xmldom/xmldom": "^0.9.10",
+    "better-sqlite3": "^12.10.0",
+    "cheerio": "^1.2.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "fast-glob": "^3.3.3",
+    "playwright": "^1.60.0"
+  }
+}
