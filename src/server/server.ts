@@ -4,6 +4,8 @@ import { openDb, pruneSearchCache } from '../db/repo.ts';
 import { createOrsClient } from '../routing/ors.ts';
 import { createApp } from './app.ts';
 import { createDispatcher, filterEnabledProviders } from '../search/dispatcher.ts';
+import { createPhotonClient } from './geocode/photon.ts';
+import { createPolygonFetcher } from './geocode/polygon.ts';
 import { PyairbnbProvider } from '../search/providers/pyairbnb.ts';
 import { BookingDIYProvider } from '../search/providers/booking-diy.ts';
 import { chromium, type Browser, type BrowserContext } from 'playwright';
@@ -136,11 +138,15 @@ const cacheTtlMs = 10 * 60 * 1000;
 pruneSearchCache(db, 60 * 60 * 1000);
 setInterval(() => pruneSearchCache(db, 60 * 60 * 1000), 60 * 60 * 1000).unref();
 
+const photon = createPhotonClient();
+const polygon = createPolygonFetcher();
 const app = createApp({
   db,
   ors,
   searchDispatcher: dispatcher,
   searchCacheTtlMs: cacheTtlMs,
+  photon,
+  polygon,
 });
 
 app.listen(port, () => {

@@ -5,6 +5,7 @@ import { usePois } from './hooks/usePois';
 import { useVisibleCollections } from './hooks/useVisibleCollections';
 import { useSearchFilters } from './hooks/useSearchFilters';
 import { useSearch } from './hooks/useSearch';
+import { useLocationSelection } from './hooks/useLocationSelection';
 import { TopBar } from './components/TopBar';
 import { MapView } from './components/MapView';
 import { SidePanel } from './components/SidePanel';
@@ -14,6 +15,8 @@ import { FilterBar } from './components/FilterBar';
 import { CandidateLayer, filterUnsavedCandidates } from './components/CandidateLayer';
 import { PoiLayer } from './components/PoiLayer';
 import { PromoteButton } from './components/PromoteButton';
+import { LocationSearchBox } from './components/LocationSearchBox';
+import { pointInGeometry } from './lib/pointInPolygon';
 import type { BBox } from './lib/bboxHysteresis';
 import type { ApiCandidate, ApiProperty } from './api';
 
@@ -43,6 +46,7 @@ export function App() {
   const [bbox, setBbox] = useState<BBox | null>(null);
   const [promotedCount, setPromotedCount] = useState(0);
   const { filters, setFilter } = useSearchFilters();
+  const location = useLocationSelection();
 
   const searchState = useSearch({ enabled: discoverEnabled, bbox, filters });
 
@@ -56,9 +60,14 @@ export function App() {
     [poiList, isCollectionVisible],
   );
 
-  const candidates = discoverEnabled && searchState.status === 'success' ? searchState.candidates : [];
+  const candidates =
+    discoverEnabled && searchState.status === 'success' ? searchState.candidates : [];
+  const candidatesInRegion = useMemo(() => {
+    if (!location.polygon) return candidates;
+    return candidates.filter((c) => pointInGeometry(c.lat, c.lng, location.polygon));
+  }, [candidates, location.polygon]);
   const unsavedCandidates = filterUnsavedCandidates(
-    candidates,
+    candidatesInRegion,
     propertyList.map((p) => ({ provider: p.provider, externalId: p.externalId })),
   );
 
@@ -71,10 +80,7 @@ export function App() {
       : null;
 
   const isEmpty =
-    propertyList.length === 0 &&
-    trailList.length === 0 &&
-    poiList.length === 0 &&
-    !discoverEnabled;
+    propertyList.length === 0 && trailList.length === 0 && poiList.length === 0 && !discoverEnabled;
 
   useEffect(() => {
     if (!discoverEnabled) setSelectedCandidateId(null);
@@ -89,12 +95,13 @@ export function App() {
 
   return (
     <div className="bpm-app">
-      <TopBar
-        trails={trailList.length}
-        properties={propertyList.length}
-        cached={promotedCount}
-      />
+      <TopBar trails={trailList.length} properties={propertyList.length} cached={promotedCount} />
       <div className="bpm-discover-row">
+        <LocationSearchBox
+          selected={location.selected}
+          onSelect={location.select}
+          onClear={location.clear}
+        />
         <DiscoverToggle enabled={discoverEnabled} onChange={setDiscoverEnabled} />
         {discoverEnabled && <FilterBar filters={filters} setFilter={setFilter} />}
         {discoverEnabled && searchState.status === 'loading' && (
@@ -137,6 +144,8 @@ export function App() {
               if (id !== null) setSelectedCandidateId(null);
             }}
             onBoundsChange={setBbox}
+            flyToBbox={location.selected?.bbox ?? null}
+            regionPolygon={location.polygon}
           >
             {visiblePoiList.length > 0 && <PoiLayer pois={visiblePoiList} />}
             {discoverEnabled && (

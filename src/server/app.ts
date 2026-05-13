@@ -10,7 +10,10 @@ import {
   NoRoutableRouteError,
 } from '../routing/ors.ts';
 import { createSearchRouter } from './routes/search.ts';
+import { createGeocodeRouter } from './routes/geocode.ts';
 import type { SearchDispatcher } from '../search/dispatcher.ts';
+import type { PhotonClient } from './geocode/photon.ts';
+import type { PolygonFetcher } from './geocode/polygon.ts';
 
 export interface AppDeps {
   db: Database;
@@ -20,6 +23,8 @@ export interface AppDeps {
   searchDispatcher?: SearchDispatcher;
   searchCacheTtlMs?: number;
   corsOrigin?: string | string[];
+  photon?: PhotonClient;
+  polygon?: PolygonFetcher;
 }
 
 interface TrailRow {
@@ -64,9 +69,10 @@ export function createApp(deps: AppDeps): Express {
 
   app.get('/api/trails', (_req, res) => {
     const rows = deps.db
-      .prepare<[], TrailRow>(
-        'SELECT id, name, trailhead_lat, trailhead_lng, length_meters, elevation_gain_meters FROM trail ORDER BY id',
-      )
+      .prepare<
+        [],
+        TrailRow
+      >('SELECT id, name, trailhead_lat, trailhead_lng, length_meters, elevation_gain_meters FROM trail ORDER BY id')
       .all();
     const trails = rows.map((r) => ({
       id: r.id,
@@ -147,17 +153,19 @@ export function createApp(deps: AppDeps): Express {
         client: deps.ors,
         getCoords: (pId, tKind, tId) => {
           const pRow = deps.db
-            .prepare<[number], { lat: number | null; lng: number | null }>(
-              'SELECT lat, lng FROM property WHERE id = ?',
-            )
+            .prepare<
+              [number],
+              { lat: number | null; lng: number | null }
+            >('SELECT lat, lng FROM property WHERE id = ?')
             .get(pId);
           if (!pRow || pRow.lat === null || pRow.lng === null) return null;
 
           if (tKind === 'trail') {
             const tRow = deps.db
-              .prepare<[number], { trailhead_lat: number; trailhead_lng: number }>(
-                'SELECT trailhead_lat, trailhead_lng FROM trail WHERE id = ?',
-              )
+              .prepare<
+                [number],
+                { trailhead_lat: number; trailhead_lng: number }
+              >('SELECT trailhead_lat, trailhead_lng FROM trail WHERE id = ?')
               .get(tId);
             if (!tRow) return null;
             return {
@@ -167,9 +175,10 @@ export function createApp(deps: AppDeps): Express {
           }
 
           const poiRow = deps.db
-            .prepare<[number], { lat: number; lng: number }>(
-              'SELECT lat, lng FROM poi WHERE id = ?',
-            )
+            .prepare<
+              [number],
+              { lat: number; lng: number }
+            >('SELECT lat, lng FROM poi WHERE id = ?')
             .get(tId);
           if (!poiRow) return null;
           return {
@@ -209,6 +218,10 @@ export function createApp(deps: AppDeps): Express {
         ...(deps.searchCacheTtlMs !== undefined ? { cacheTtlMs: deps.searchCacheTtlMs } : {}),
       }),
     );
+  }
+
+  if (deps.photon && deps.polygon) {
+    app.use('/api', createGeocodeRouter({ photon: deps.photon, polygon: deps.polygon }));
   }
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

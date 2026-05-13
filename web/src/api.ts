@@ -72,6 +72,29 @@ export interface ApiSearchResponse {
   warnings: Array<{ provider: string; message: string }>;
 }
 
+export type GeocodeKind = 'city' | 'town' | 'region' | 'country';
+
+export interface ApiGeocodeResult {
+  id: string;
+  osmType: 'N' | 'W' | 'R';
+  osmId: number;
+  name: string;
+  label: string;
+  kind: GeocodeKind;
+  center: { lat: number; lng: number };
+  bbox: { north: number; south: number; east: number; west: number } | null;
+  hasPolygon: boolean;
+}
+
+export interface ApiGeocodePolygon {
+  osmType: 'N' | 'W' | 'R';
+  osmId: number;
+  geometry: {
+    type: 'Polygon' | 'MultiPolygon' | string;
+    coordinates: unknown;
+  };
+}
+
 async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   if (!res.ok) {
@@ -103,4 +126,14 @@ export const api = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return (await res.json()) as { property: ApiProperty };
     }),
+  geocode: (q: string, signal?: AbortSignal) =>
+    getJson<{ results: ApiGeocodeResult[] }>(
+      `/api/geocode?q=${encodeURIComponent(q)}`,
+      signal ? { signal } : {},
+    ),
+  geocodePolygon: (osmType: 'N' | 'W' | 'R', osmId: number, signal?: AbortSignal) =>
+    getJson<ApiGeocodePolygon>(
+      `/api/geocode/polygon?osm_type=${osmType}&osm_id=${osmId}`,
+      signal ? { signal } : {},
+    ),
 };

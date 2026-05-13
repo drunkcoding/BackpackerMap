@@ -47,6 +47,125 @@ body {
   z-index: 580;
 }
 
+.bpm-location-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 260px;
+  flex: 0 0 auto;
+}
+
+.bpm-location-search__input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  padding-right: 28px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  background: var(--vellum);
+  color: var(--ink);
+  border: 1px solid var(--paper-rule);
+  border-radius: var(--radius-md);
+  outline: none;
+}
+
+.bpm-location-search__input:focus {
+  border-color: var(--brass-deep);
+  box-shadow: 0 0 0 3px rgba(201, 166, 97, 0.25);
+}
+
+.bpm-location-search__clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--graphite);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+}
+
+.bpm-location-search__clear:hover {
+  color: var(--ink);
+}
+
+.bpm-location-search__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--vellum);
+  border: 1px solid var(--paper-rule);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lift);
+  z-index: 1000;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.bpm-location-search__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  border-bottom: 1px solid var(--paper-rule);
+}
+
+.bpm-location-search__item:last-child {
+  border-bottom: none;
+}
+
+.bpm-location-search__item.is-active,
+.bpm-location-search__item:hover {
+  background: var(--vellum-2);
+}
+
+.bpm-location-search__name {
+  font-weight: 600;
+}
+
+.bpm-location-search__label {
+  flex: 1;
+  font-size: var(--text-xs);
+  color: var(--graphite);
+}
+
+.bpm-location-search__kind {
+  font-family: var(--font-mono);
+  font-size: var(--text-xxs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--vellum-2);
+  color: var(--graphite);
+  border: 1px solid var(--paper-rule);
+}
+
+.bpm-location-search__error,
+.bpm-location-search__loading {
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--graphite);
+}
+
+.bpm-location-search__error {
+  color: #6b4a1b;
+}
+
 .bpm-search-warnings {
   display: flex;
   flex-direction: column;
@@ -450,7 +569,8 @@ body {
   color: var(--graphite);
   border-radius: 999px;
   cursor: pointer;
-  transition: background-color var(--dur-fast) var(--ease-ink),
+  transition:
+    background-color var(--dur-fast) var(--ease-ink),
     border-color var(--dur-fast) var(--ease-ink),
     color var(--dur-fast) var(--ease-ink);
 }
@@ -549,16 +669,52 @@ body {
 
 .bpm-marker {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.bpm-marker__icon {
+  display: inline-flex;
   width: 28px;
   height: 28px;
+  pointer-events: auto;
 }
 
-.bpm-marker--airbnb svg {
-  color: var(--coral);
+.bpm-marker--airbnb .bpm-marker__icon svg,
+.bpm-marker--airbnb > svg {
+  color: var(--airbnb-pink);
 }
 
-.bpm-marker--booking svg {
-  color: var(--slate);
+.bpm-marker--booking .bpm-marker__icon svg,
+.bpm-marker--booking > svg {
+  color: var(--booking-blue);
+}
+
+.bpm-marker__price {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--vellum);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--paper-rule);
+  box-shadow: 0 1px 3px rgba(40, 30, 10, 0.2);
+  pointer-events: none;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bpm-marker--candidate .bpm-marker__price {
+  opacity: 0.85;
+  background: var(--vellum-2);
 }
 
 .bpm-marker--selected {
