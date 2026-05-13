@@ -38,6 +38,7 @@ export interface SearchQuery {
   neighbourhoods?: string[];
   hostTypes?: HostType[];
   maxResults: number;
+  mode?: 'list' | 'detail';
 }
 
 export interface ProviderResult {

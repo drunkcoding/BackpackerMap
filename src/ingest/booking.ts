@@ -84,6 +84,25 @@ export function parseWishlistHtml(html: string): BookingWishlistItem[] {
   return items;
 }
 
+export function extractAtlasLatLng(html: string): { lat: number; lng: number } | null {
+  const $ = cheerio.load(html);
+  const seen = new Set<string>();
+  let result: { lat: number; lng: number } | null = null;
+  $('[data-atlas-latlng]').each((_i, el) => {
+    const raw = $(el).attr('data-atlas-latlng');
+    if (!raw || seen.has(raw)) return;
+    seen.add(raw);
+    const parts = raw.split(',');
+    if (parts.length !== 2) return;
+    const lat = Number(parts[0]);
+    const lng = Number(parts[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    if (lat === 0 && lng === 0) return;
+    if (!result) result = { lat, lng };
+  });
+  return result;
+}
+
 export function extractJsonLd(html: string): BookingPropertyData {
   const $ = cheerio.load(html);
   let lat: number | null = null;

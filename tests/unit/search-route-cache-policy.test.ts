@@ -16,6 +16,7 @@ const VALID_BBOX_QUERY: SearchQuery = {
   guests: { adults: 2, children: 0, infants: 0, pets: 0 },
   currency: 'EUR',
   maxResults: 50,
+  mode: 'list',
 };
 
 function fakeResult(provider: 'airbnb' | 'booking', id: string): ProviderResult {

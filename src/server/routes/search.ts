@@ -36,6 +36,7 @@ function parseQuery(req: Request): SearchQuery | { error: string } {
   const currency = String(q['currency'] ?? 'EUR');
   const maxResults = q['maxResults'] ? Math.min(100, Number(q['maxResults'])) : 50;
 
+  const mode: 'list' | 'detail' = q['mode'] === 'detail' ? 'detail' : 'list';
   const query: SearchQuery = {
     bbox: { north, south, east, west },
     zoom: Number.isFinite(zoom) ? zoom : 12,
@@ -44,6 +45,7 @@ function parseQuery(req: Request): SearchQuery | { error: string } {
     guests: { adults, children, infants, pets },
     currency,
     maxResults,
+    mode,
   };
   if (q['priceMin']) query.priceMin = Number(q['priceMin']);
   if (q['priceMax']) query.priceMax = Number(q['priceMax']);
