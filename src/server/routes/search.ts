@@ -10,6 +10,7 @@ import {
 } from '../../db/repo.ts';
 import { cacheKey, canonicaliseQuery } from '../../search/canonical.ts';
 import type { SearchDispatcher } from '../../search/dispatcher.ts';
+import { normalizePriceToTotal } from '../../search/price.ts';
 import type { ProviderResult, SearchQuery } from '../../search/types.ts';
 
 const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -111,6 +112,12 @@ export function createSearchRouter(deps: SearchRouteDeps): Router {
 
     const ids: number[] = [];
     for (const r of dispatched.results as ProviderResult[]) {
+      const norm = normalizePriceToTotal(
+        r.provider,
+        { priceLabel: r.priceLabel, priceAmount: r.priceAmount, currency: r.currency },
+        query.checkin,
+        query.checkout,
+      );
       const candidate = upsertCandidate(deps.db, {
         provider: r.provider,
         externalId: r.externalId,
@@ -118,9 +125,9 @@ export function createSearchRouter(deps: SearchRouteDeps): Router {
         url: r.url,
         lat: r.lat,
         lng: r.lng,
-        priceLabel: r.priceLabel,
-        priceAmount: r.priceAmount,
-        currency: r.currency,
+        priceLabel: norm.priceLabel,
+        priceAmount: norm.priceAmount,
+        currency: norm.currency,
         photoUrl: r.photoUrl,
         rating: r.rating,
         reviewCount: r.reviewCount,

@@ -35,6 +35,30 @@ describe('nfltEncode', () => {
   it('review score 9.5 encodes as 95', () => {
     expect(nfltEncode({ reviewScore: 9.5 })).toBe('review_score=95');
   });
+
+  it('encodes price-per-night range with currency', () => {
+    expect(nfltEncode({ pricePerNight: { currency: 'EUR', min: 50, max: 200 } })).toBe(
+      'price=EUR-50-200-1',
+    );
+  });
+
+  it('encodes price-per-night min-only (empty max segment)', () => {
+    expect(nfltEncode({ pricePerNight: { currency: 'GBP', min: 80 } })).toBe('price=GBP-80--1');
+  });
+
+  it('encodes price-per-night max-only (empty min segment)', () => {
+    expect(nfltEncode({ pricePerNight: { currency: 'EUR', max: 150 } })).toBe('price=EUR--150-1');
+  });
+
+  it('skips price entirely when both min and max are undefined', () => {
+    expect(nfltEncode({ pricePerNight: { currency: 'EUR' } })).toBe('');
+  });
+
+  it('floors min and ceils max so the resulting range is inclusive of user intent', () => {
+    expect(nfltEncode({ pricePerNight: { currency: 'EUR', min: 50.7, max: 200.1 } })).toBe(
+      'price=EUR-50-201-1',
+    );
+  });
 });
 
 describe('buildBookingSearchUrl', () => {
@@ -68,5 +92,22 @@ describe('buildBookingSearchUrl', () => {
   it('encodes minRating as review_score scaled', () => {
     const url = new URL(buildBookingSearchUrl(makeQuery({ minRating: 9.0 })));
     expect(url.searchParams.get('nflt') ?? '').toContain('review_score=90');
+  });
+
+  it('forwards priceMin/priceMax into nflt as a per-night range', () => {
+    const url = new URL(
+      buildBookingSearchUrl(makeQuery({ priceMin: 60, priceMax: 200, currency: 'EUR' })),
+    );
+    expect(url.searchParams.get('nflt') ?? '').toContain('price=EUR-60-200-1');
+  });
+
+  it('forwards priceMin only when priceMax is missing', () => {
+    const url = new URL(buildBookingSearchUrl(makeQuery({ priceMin: 60, currency: 'GBP' })));
+    expect(url.searchParams.get('nflt') ?? '').toContain('price=GBP-60--1');
+  });
+
+  it('does not add a price filter when neither min nor max is set', () => {
+    const url = new URL(buildBookingSearchUrl(makeQuery()));
+    expect((url.searchParams.get('nflt') ?? '').includes('price=')).toBe(false);
   });
 });

@@ -59,7 +59,7 @@ export function FilterBarTier1({ filters, setFilter }: FilterBarTier1Props) {
         />
       </label>
       <label className="bpm-filter-label">
-        Price min
+        Min / night (€)
         <input
           type="number"
           min={0}
@@ -72,7 +72,7 @@ export function FilterBarTier1({ filters, setFilter }: FilterBarTier1Props) {
         />
       </label>
       <label className="bpm-filter-label">
-        Price max
+        Max / night (€)
         <input
           type="number"
           min={0}

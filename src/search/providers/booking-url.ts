@@ -21,6 +21,7 @@ export interface NfltFilters {
   reviewScore?: number;
   amenityFacilities?: number[];
   mealPlans?: number[];
+  pricePerNight?: { currency: string; min?: number; max?: number };
 }
 
 export function nfltEncode(filters: NfltFilters): string {
@@ -40,6 +41,14 @@ export function nfltEncode(filters: NfltFilters): string {
   }
   if (filters.mealPlans) {
     for (const m of filters.mealPlans) parts.push(`mealplan=${m}`);
+  }
+  if (filters.pricePerNight) {
+    const { currency, min, max } = filters.pricePerNight;
+    if (min !== undefined || max !== undefined) {
+      const lo = min !== undefined ? Math.max(0, Math.floor(min)) : '';
+      const hi = max !== undefined ? Math.max(0, Math.ceil(max)) : '';
+      parts.push(`price=${currency}-${lo}-${hi}-1`);
+    }
   }
   return parts.join(';');
 }
@@ -89,12 +98,22 @@ export function buildBookingSearchUrl(query: SearchQuery): string {
     ? query.mealPlans.map((m) => MEAL_PLAN_CODE[m]).filter((v): v is number => v !== undefined)
     : [];
 
+  const hasPriceFilter = query.priceMin !== undefined || query.priceMax !== undefined;
   const nflt = nfltEncode({
     htIds,
     ...(query.freeCancellation !== undefined ? { freeCancellation: query.freeCancellation } : {}),
     ...(query.minRating !== undefined ? { reviewScore: query.minRating } : {}),
     amenityFacilities,
     mealPlans,
+    ...(hasPriceFilter
+      ? {
+          pricePerNight: {
+            currency: query.currency,
+            ...(query.priceMin !== undefined ? { min: query.priceMin } : {}),
+            ...(query.priceMax !== undefined ? { max: query.priceMax } : {}),
+          },
+        }
+      : {}),
   });
   if (nflt) params.set('nflt', nflt);
 
