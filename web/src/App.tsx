@@ -1,0 +1,137 @@
+import { useEffect, useState } from 'react';
+import { useProperties } from './hooks/useProperties';
+import { useTrails } from './hooks/useTrails';
+import { useSearchFilters } from './hooks/useSearchFilters';
+import { useSearch } from './hooks/useSearch';
+import { TopBar } from './components/TopBar';
+import { MapView } from './components/MapView';
+import { SidePanel } from './components/SidePanel';
+import { EmptyState } from './components/EmptyState';
+import { DiscoverToggle } from './components/DiscoverToggle';
+import { FilterBar } from './components/FilterBar';
+import { CandidateLayer, filterUnsavedCandidates } from './components/CandidateLayer';
+import { PromoteButton } from './components/PromoteButton';
+import type { BBox } from './lib/bboxHysteresis';
+import type { ApiCandidate, ApiProperty } from './api';
+
+function candidateAsProperty(c: ApiCandidate): ApiProperty {
+  return {
+    id: -c.id,
+    provider: c.provider,
+    externalId: c.externalId,
+    name: c.name,
+    url: c.url,
+    lat: c.lat,
+    lng: c.lng,
+    priceLabel: c.priceLabel,
+    photoUrl: c.photoUrl,
+  };
+}
+
+export function App() {
+  const [propertiesVersion, setPropertiesVersion] = useState(0);
+  const propsState = useProperties(propertiesVersion);
+  const trailsState = useTrails();
+  const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
+  const [hoveredTrailId, setHoveredTrailId] = useState<number | null>(null);
+  const [discoverEnabled, setDiscoverEnabled] = useState(false);
+  const [bbox, setBbox] = useState<BBox | null>(null);
+  const [promotedCount, setPromotedCount] = useState(0);
+  const { filters, setFilter } = useSearchFilters();
+
+  const searchState = useSearch({ enabled: discoverEnabled, bbox, filters });
+
+  const propertyList = propsState.status === 'success' ? propsState.data : [];
+  const trailList = trailsState.status === 'success' ? trailsState.data : [];
+
+  const candidates = discoverEnabled && searchState.status === 'success' ? searchState.candidates : [];
+  const unsavedCandidates = filterUnsavedCandidates(
+    candidates,
+    propertyList.map((p) => ({ provider: p.provider, externalId: p.externalId })),
+  );
+
+  const selectedProperty = propertyList.find((p) => p.id === selectedPropertyId) ?? null;
+  const selectedCandidate = unsavedCandidates.find((c) => c.id === selectedCandidateId) ?? null;
+  const sidePanelTarget: ApiProperty | null = selectedProperty
+    ? selectedProperty
+    : selectedCandidate
+      ? candidateAsProperty(selectedCandidate)
+      : null;
+
+  const isEmpty = propertyList.length === 0 && trailList.length === 0 && !discoverEnabled;
+
+  useEffect(() => {
+    if (!discoverEnabled) setSelectedCandidateId(null);
+  }, [discoverEnabled]);
+
+  function handlePromoted(propertyId: number) {
+    setPromotedCount((n) => n + 1);
+    setSelectedCandidateId(null);
+    setSelectedPropertyId(propertyId);
+    setPropertiesVersion((v) => v + 1);
+  }
+
+  return (
+    <div className="bpm-app">
+      <TopBar
+        trails={trailList.length}
+        properties={propertyList.length}
+        cached={promotedCount}
+      />
+      <div className="bpm-discover-row">
+        <DiscoverToggle enabled={discoverEnabled} onChange={setDiscoverEnabled} />
+        {discoverEnabled && <FilterBar filters={filters} setFilter={setFilter} />}
+        {discoverEnabled && searchState.status === 'loading' && (
+          <span className="bpm-search-status">searching…</span>
+        )}
+        {discoverEnabled && searchState.status === 'success' && (
+          <span className="bpm-search-status">
+            {unsavedCandidates.length} new · {searchState.cached ? 'cached' : 'fresh'}
+          </span>
+        )}
+      </div>
+      <main className="bpm-main">
+        {isEmpty && <EmptyState />}
+        {!isEmpty && (
+          <MapView
+            trails={trailList}
+            properties={propertyList}
+            selectedPropertyId={selectedPropertyId}
+            hoveredTrailId={hoveredTrailId}
+            onSelectProperty={(id) => {
+              setSelectedPropertyId(id);
+              if (id !== null) setSelectedCandidateId(null);
+            }}
+            onBoundsChange={setBbox}
+          >
+            {discoverEnabled && (
+              <CandidateLayer
+                candidates={unsavedCandidates}
+                savedProperties={propertyList}
+                onSelectCandidate={(id) => {
+                  setSelectedCandidateId(id);
+                  if (id !== null) setSelectedPropertyId(null);
+                }}
+              />
+            )}
+          </MapView>
+        )}
+        <SidePanel
+          property={sidePanelTarget}
+          trails={trailList}
+          onClose={() => {
+            setSelectedPropertyId(null);
+            setSelectedCandidateId(null);
+          }}
+          onHoverTrail={setHoveredTrailId}
+          extraAction={
+            selectedCandidate ? (
+              <PromoteButton candidateId={selectedCandidate.id} onPromoted={handlePromoted} />
+            ) : null
+          }
+        />
+      </main>
+    </div>
+  );
+}
