@@ -4,8 +4,9 @@ import Database from 'better-sqlite3';
 import type { Database as DatabaseType } from 'better-sqlite3';
 import { migrate } from './schema.ts';
 
-export type SourceKind = 'alltrails' | 'airbnb' | 'booking';
+export type SourceKind = 'alltrails' | 'airbnb' | 'booking' | 'google_maps';
 export type Provider = 'airbnb' | 'booking';
+export type TargetKind = 'trail' | 'poi';
 
 export interface TrailInput {
   sourceId: number;
@@ -41,9 +42,10 @@ export interface Property extends PropertyInput {
   id: number;
 }
 
-export interface Distance {
+export interface RouteEntry {
   propertyId: number;
-  trailId: number;
+  targetKind: TargetKind;
+  targetId: number;
   meters: number;
   seconds: number;
   computedAt: string;
@@ -195,49 +197,214 @@ export function deleteProperty(db: DatabaseType, id: number): void {
   db.prepare('DELETE FROM property WHERE id = ?').run(id);
 }
 
-interface DistanceRow {
+interface RouteRow {
   property_id: number;
-  trail_id: number;
+  target_kind: TargetKind;
+  target_id: number;
   meters: number;
   seconds: number;
   computed_at: string;
 }
 
-export function getDistance(
+export function getRoute(
   db: DatabaseType,
   propertyId: number,
-  trailId: number,
-): Distance | null {
+  targetKind: TargetKind,
+  targetId: number,
+): RouteEntry | null {
   const row = db
-    .prepare<[number, number], DistanceRow>(
-      'SELECT * FROM distance_cache WHERE property_id = ? AND trail_id = ?',
+    .prepare<[number, TargetKind, number], RouteRow>(
+      'SELECT * FROM route_cache WHERE property_id = ? AND target_kind = ? AND target_id = ?',
     )
-    .get(propertyId, trailId);
+    .get(propertyId, targetKind, targetId);
   if (!row) return null;
   return {
     propertyId: row.property_id,
-    trailId: row.trail_id,
+    targetKind: row.target_kind,
+    targetId: row.target_id,
     meters: row.meters,
     seconds: row.seconds,
     computedAt: row.computed_at,
   };
 }
 
-export function setDistance(
+export function setRoute(
   db: DatabaseType,
   propertyId: number,
-  trailId: number,
+  targetKind: TargetKind,
+  targetId: number,
   meters: number,
   seconds: number,
 ): void {
   db.prepare(
-    `INSERT INTO distance_cache (property_id, trail_id, meters, seconds)
-     VALUES (?, ?, ?, ?)
-     ON CONFLICT (property_id, trail_id) DO UPDATE SET
+    `INSERT INTO route_cache (property_id, target_kind, target_id, meters, seconds)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT (property_id, target_kind, target_id) DO UPDATE SET
        meters = excluded.meters,
        seconds = excluded.seconds,
        computed_at = datetime('now')`,
-  ).run(propertyId, trailId, meters, seconds);
+  ).run(propertyId, targetKind, targetId, meters, seconds);
+}
+
+export interface PoiInput {
+  sourceId: number;
+  collection: string;
+  externalId: string;
+  name: string;
+  lat: number;
+  lng: number;
+  category: string | null;
+  note: string | null;
+  url: string | null;
+  address: string | null;
+  raw: string;
+}
+
+export interface Poi extends PoiInput {
+  id: number;
+  ingestedAt: string;
+}
+
+interface PoiRow {
+  id: number;
+  source_id: number;
+  collection: string;
+  external_id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  category: string | null;
+  note: string | null;
+  url: string | null;
+  address: string | null;
+  raw: string;
+  ingested_at: string;
+}
+
+function mapPoi(r: PoiRow): Poi {
+  return {
+    id: r.id,
+    sourceId: r.source_id,
+    collection: r.collection,
+    externalId: r.external_id,
+    name: r.name,
+    lat: r.lat,
+    lng: r.lng,
+    category: r.category,
+    note: r.note,
+    url: r.url,
+    address: r.address,
+    raw: r.raw,
+    ingestedAt: r.ingested_at,
+  };
+}
+
+export function upsertPoi(db: DatabaseType, p: PoiInput): Poi {
+  const stmt = db.prepare(`
+    INSERT INTO poi
+      (source_id, collection, external_id, name, lat, lng,
+       category, note, url, address, raw)
+    VALUES
+      (@sourceId, @collection, @externalId, @name, @lat, @lng,
+       @category, @note, @url, @address, @raw)
+    ON CONFLICT (source_id, external_id) DO UPDATE SET
+      collection = excluded.collection,
+      name = excluded.name,
+      lat = excluded.lat,
+      lng = excluded.lng,
+      category = excluded.category,
+      note = excluded.note,
+      url = excluded.url,
+      address = excluded.address,
+      raw = excluded.raw
+    RETURNING *
+  `);
+  const row = stmt.get(p) as PoiRow;
+  return mapPoi(row);
+}
+
+export function listPois(db: DatabaseType): Poi[] {
+  return (
+    db.prepare<[], PoiRow>('SELECT * FROM poi ORDER BY id').all() as PoiRow[]
+  ).map(mapPoi);
+}
+
+export function listPoisByCollection(db: DatabaseType, collection: string): Poi[] {
+  return (
+    db
+      .prepare<[string], PoiRow>('SELECT * FROM poi WHERE collection = ? ORDER BY id')
+      .all(collection) as PoiRow[]
+  ).map(mapPoi);
+}
+
+export interface ReplaceCollectionResult {
+  inserted: number;
+  updated: number;
+  removed: number;
+  total: number;
+}
+
+export function replaceCollectionPois(
+  db: DatabaseType,
+  sourceId: number,
+  collection: string,
+  inputs: PoiInput[],
+): ReplaceCollectionResult {
+  const txn = db.transaction((): ReplaceCollectionResult => {
+    const beforeIds = new Set(
+      db
+        .prepare<[number, string], { external_id: string }>(
+          'SELECT external_id FROM poi WHERE source_id = ? AND collection = ?',
+        )
+        .all(sourceId, collection)
+        .map((r) => r.external_id),
+    );
+
+    const scrapedIds = new Set<string>();
+    let inserted = 0;
+    let updated = 0;
+    for (const input of inputs) {
+      if (input.sourceId !== sourceId || input.collection !== collection) {
+        throw new Error(
+          `replaceCollectionPois: input has mismatched sourceId/collection ` +
+            `(want ${sourceId}/${collection}, got ${input.sourceId}/${input.collection})`,
+        );
+      }
+      scrapedIds.add(input.externalId);
+      upsertPoi(db, input);
+      if (beforeIds.has(input.externalId)) updated++;
+      else inserted++;
+    }
+
+    const toRemoveIds = [...beforeIds].filter((id) => !scrapedIds.has(id));
+    let removed = 0;
+    if (toRemoveIds.length > 0) {
+      const params: Array<number | string> = [sourceId, collection, ...toRemoveIds];
+      const poiIdsToRemove = (
+        db
+          .prepare<Array<number | string>, { id: number }>(
+            `SELECT id FROM poi WHERE source_id = ? AND collection = ?
+             AND external_id IN (${toRemoveIds.map(() => '?').join(',')})`,
+          )
+          .all(...params) as Array<{ id: number }>
+      ).map((r) => r.id);
+
+      if (poiIdsToRemove.length > 0) {
+        const placeholders = poiIdsToRemove.map(() => '?').join(',');
+        db.prepare(
+          `DELETE FROM route_cache WHERE target_kind = 'poi' AND target_id IN (${placeholders})`,
+        ).run(...poiIdsToRemove);
+        const info = db
+          .prepare(`DELETE FROM poi WHERE id IN (${placeholders})`)
+          .run(...poiIdsToRemove);
+        removed = Number(info.changes);
+      }
+    }
+
+    return { inserted, updated, removed, total: inputs.length };
+  });
+
+  return txn();
 }
 
 export interface CandidateInput {

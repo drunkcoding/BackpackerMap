@@ -5,8 +5,8 @@ import { openDb } from '../../src/db/repo.ts';
 import { createApp } from '../../src/server/app.ts';
 import type { LatLng } from '../../src/routing/ors.ts';
 
-function seed(db: Database): { propertyId: number; trailId: number } {
-  db.exec("INSERT INTO source (kind) VALUES ('alltrails'), ('airbnb')");
+function seed(db: Database): { propertyId: number; trailId: number; poiId: number } {
+  db.exec("INSERT INTO source (kind) VALUES ('alltrails'), ('airbnb'), ('google_maps')");
   db.exec(`
     INSERT INTO trail (source_id, external_id, name, trailhead_lat, trailhead_lng, length_meters, elevation_gain_meters, geojson, raw_path)
     VALUES (1, 't1.gpx', 'Loch an Eilein', 57.1, -3.8, 8400, 320, '{"type":"LineString","coordinates":[[-3.8,57.1],[-3.79,57.11]]}', '/tmp/t1.gpx');
@@ -21,7 +21,12 @@ function seed(db: Database): { propertyId: number; trailId: number } {
     VALUES (2, 'airbnb', 'no-coords', 'No coords listing', 'https://www.airbnb.com/rooms/no-coords',
             NULL, NULL, '{}');
   `);
-  return { propertyId: 1, trailId: 1 };
+  db.exec(`
+    INSERT INTO poi (source_id, collection, external_id, name, lat, lng, note, address, raw)
+    VALUES (3, 'Scotland 2026', 'ChIJ_test1', 'The Drovers Inn',
+            56.2710, -4.7150, 'great rest stop', 'Inverarnan, UK', '{}');
+  `);
+  return { propertyId: 1, trailId: 1, poiId: 1 };
 }
 
 describe('HTTP API', () => {
@@ -105,5 +110,72 @@ describe('HTTP API', () => {
         [-3.79, 57.11],
       ],
     });
+  });
+
+  it('GET /api/pois returns seeded POI rows', async () => {
+    seed(db);
+    const app = createApp({ db, ors });
+    const res = await request(app).get('/api/pois');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toMatchObject({
+      collection: 'Scotland 2026',
+      name: 'The Drovers Inn',
+      lat: 56.2710,
+      lng: -4.7150,
+      note: 'great rest stop',
+    });
+  });
+
+  it('GET /api/distance with targetKind=poi works end-to-end', async () => {
+    const { propertyId, poiId } = seed(db);
+    const app = createApp({ db, ors });
+    const res = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=poi&targetId=${poiId}`,
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ meters: 42000, seconds: 2280, cached: false });
+  });
+
+  it('GET /api/distance with targetKind=trail&targetId works (explicit new shape)', async () => {
+    const { propertyId, trailId } = seed(db);
+    const app = createApp({ db, ors });
+    const res = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=trail&targetId=${trailId}`,
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.meters).toBe(42000);
+  });
+
+  it('GET /api/distance with invalid targetKind returns 400', async () => {
+    seed(db);
+    const app = createApp({ db, ors });
+    const res = await request(app).get(
+      '/api/distance?propertyId=1&targetKind=bogus&targetId=1',
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it('GET /api/distance for poi target separates cache from trail target', async () => {
+    const { propertyId, trailId, poiId } = seed(db);
+    const app = createApp({ db, ors });
+
+    const trailCall = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=trail&targetId=${trailId}`,
+    );
+    expect(trailCall.body.cached).toBe(false);
+    expect(orsCalls).toBe(1);
+
+    const poiCall = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=poi&targetId=${poiId}`,
+    );
+    expect(poiCall.body.cached).toBe(false);
+    expect(orsCalls).toBe(2);
+
+    const trailAgain = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=trail&targetId=${trailId}`,
+    );
+    expect(trailAgain.body.cached).toBe(true);
+    expect(orsCalls).toBe(2);
   });
 });

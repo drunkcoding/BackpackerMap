@@ -1,5 +1,5 @@
 import type { Database } from 'better-sqlite3';
-import { getDistance, setDistance } from '../db/repo.ts';
+import { getRoute, setRoute, type TargetKind } from '../db/repo.ts';
 
 export interface LatLng {
   lat: number;
@@ -124,24 +124,31 @@ export function createOrsClient(options: OrsClientOptions): {
 
 export interface CachedDistanceDeps {
   client: { getDrivingDistance(from: LatLng, to: LatLng): Promise<DrivingDistance> };
-  getCoords(propertyId: number, trailId: number): { from: LatLng; to: LatLng } | null;
+  getCoords(
+    propertyId: number,
+    targetKind: TargetKind,
+    targetId: number,
+  ): { from: LatLng; to: LatLng } | null;
 }
 
 export async function getCachedDrivingDistance(
   db: Database,
   propertyId: number,
-  trailId: number,
+  targetKind: TargetKind,
+  targetId: number,
   deps: CachedDistanceDeps,
 ): Promise<{ meters: number; seconds: number; cached: boolean }> {
-  const existing = getDistance(db, propertyId, trailId);
+  const existing = getRoute(db, propertyId, targetKind, targetId);
   if (existing) {
     return { meters: existing.meters, seconds: existing.seconds, cached: true };
   }
-  const coords = deps.getCoords(propertyId, trailId);
+  const coords = deps.getCoords(propertyId, targetKind, targetId);
   if (!coords) {
-    throw new Error(`unknown propertyId/trailId pair: ${propertyId}/${trailId}`);
+    throw new Error(
+      `unknown property/${targetKind} pair: ${propertyId}/${targetId}`,
+    );
   }
   const fresh = await deps.client.getDrivingDistance(coords.from, coords.to);
-  setDistance(db, propertyId, trailId, fresh.meters, fresh.seconds);
+  setRoute(db, propertyId, targetKind, targetId, fresh.meters, fresh.seconds);
   return { meters: fresh.meters, seconds: fresh.seconds, cached: false };
 }

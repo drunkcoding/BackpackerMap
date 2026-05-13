@@ -89,14 +89,14 @@ describe('getCachedDrivingDistance', () => {
 
   it('miss -> fetch + store; second call -> cached hit, no fetch', async () => {
     const client = { getDrivingDistance: vi.fn(async () => ({ meters: 42000, seconds: 2280 })) };
-    const first = await getCachedDrivingDistance(db, 1, 1, {
+    const first = await getCachedDrivingDistance(db, 1, 'trail', 1, {
       client,
       getCoords: coordsLookup,
     });
     expect(first).toEqual({ meters: 42000, seconds: 2280, cached: false });
     expect(client.getDrivingDistance).toHaveBeenCalledTimes(1);
 
-    const second = await getCachedDrivingDistance(db, 1, 1, {
+    const second = await getCachedDrivingDistance(db, 1, 'trail', 1, {
       client,
       getCoords: coordsLookup,
     });
@@ -106,12 +106,12 @@ describe('getCachedDrivingDistance', () => {
 
   it('aged cache entries are still returned (no TTL in v1)', async () => {
     db.prepare(
-      `INSERT INTO distance_cache (property_id, trail_id, meters, seconds, computed_at)
-       VALUES (?, ?, ?, ?, datetime('now', '-30 day'))`,
-    ).run(1, 1, 100, 60);
+      `INSERT INTO route_cache (property_id, target_kind, target_id, meters, seconds, computed_at)
+       VALUES (?, ?, ?, ?, ?, datetime('now', '-30 day'))`,
+    ).run(1, 'trail', 1, 100, 60);
 
     const client = { getDrivingDistance: vi.fn(async () => ({ meters: 0, seconds: 0 })) };
-    const result = await getCachedDrivingDistance(db, 1, 1, {
+    const result = await getCachedDrivingDistance(db, 1, 'trail', 1, {
       client,
       getCoords: coordsLookup,
     });

@@ -1,7 +1,7 @@
 import express, { type Express, type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import type { Database } from 'better-sqlite3';
-import { listProperties } from '../db/repo.ts';
+import { listProperties, listPois } from '../db/repo.ts';
 import {
   getCachedDrivingDistance,
   type LatLng,
@@ -104,31 +104,77 @@ export function createApp(deps: AppDeps): Express {
     });
   });
 
+  app.get('/api/pois', (_req, res) => {
+    const pois = listPois(deps.db).map((p) => ({
+      id: p.id,
+      collection: p.collection,
+      externalId: p.externalId,
+      name: p.name,
+      lat: p.lat,
+      lng: p.lng,
+      category: p.category,
+      note: p.note,
+      url: p.url,
+      address: p.address,
+    }));
+    res.json(pois);
+  });
+
   app.get('/api/distance', async (req: Request, res: Response, next: NextFunction) => {
     const propertyId = Number(req.query['propertyId']);
-    const trailId = Number(req.query['trailId']);
-    if (!Number.isInteger(propertyId) || !Number.isInteger(trailId)) {
-      res.status(400).json({ error: 'propertyId and trailId must be integers' });
+
+    let targetKind: 'trail' | 'poi';
+    let targetId: number;
+    if (req.query['targetKind'] !== undefined || req.query['targetId'] !== undefined) {
+      const tk = String(req.query['targetKind'] ?? '');
+      if (tk !== 'trail' && tk !== 'poi') {
+        res.status(400).json({ error: "targetKind must be 'trail' or 'poi'" });
+        return;
+      }
+      targetKind = tk;
+      targetId = Number(req.query['targetId']);
+    } else {
+      targetKind = 'trail';
+      targetId = Number(req.query['trailId']);
+    }
+
+    if (!Number.isInteger(propertyId) || !Number.isInteger(targetId)) {
+      res.status(400).json({ error: 'propertyId and target id must be integers' });
       return;
     }
     try {
-      const result = await getCachedDrivingDistance(deps.db, propertyId, trailId, {
+      const result = await getCachedDrivingDistance(deps.db, propertyId, targetKind, targetId, {
         client: deps.ors,
-        getCoords: (pId, tId) => {
+        getCoords: (pId, tKind, tId) => {
           const pRow = deps.db
             .prepare<[number], { lat: number | null; lng: number | null }>(
               'SELECT lat, lng FROM property WHERE id = ?',
             )
             .get(pId);
-          const tRow = deps.db
-            .prepare<[number], { trailhead_lat: number; trailhead_lng: number }>(
-              'SELECT trailhead_lat, trailhead_lng FROM trail WHERE id = ?',
+          if (!pRow || pRow.lat === null || pRow.lng === null) return null;
+
+          if (tKind === 'trail') {
+            const tRow = deps.db
+              .prepare<[number], { trailhead_lat: number; trailhead_lng: number }>(
+                'SELECT trailhead_lat, trailhead_lng FROM trail WHERE id = ?',
+              )
+              .get(tId);
+            if (!tRow) return null;
+            return {
+              from: { lat: pRow.lat, lng: pRow.lng },
+              to: { lat: tRow.trailhead_lat, lng: tRow.trailhead_lng },
+            };
+          }
+
+          const poiRow = deps.db
+            .prepare<[number], { lat: number; lng: number }>(
+              'SELECT lat, lng FROM poi WHERE id = ?',
             )
             .get(tId);
-          if (!pRow || !tRow || pRow.lat === null || pRow.lng === null) return null;
+          if (!poiRow) return null;
           return {
             from: { lat: pRow.lat, lng: pRow.lng },
-            to: { lat: tRow.trailhead_lat, lng: tRow.trailhead_lng },
+            to: { lat: poiRow.lat, lng: poiRow.lng },
           };
         },
       });
