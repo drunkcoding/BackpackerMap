@@ -216,3 +216,38 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- BackpackerMap project-specific ---
+
+# Personal user data (GPX exports, Airbnb dump, Booking cookies)
+data/
+
+# Runtime SQLite DB + WAL/SHM sidecars
+db/*.sqlite
+db/*.sqlite-wal
+db/*.sqlite-shm
+
+# Runtime secrets
+.env
+.env.local
+
+# Node
+node_modules/
+
+# Build output
+/dist/
+web/dist/
+
+# Test artefacts
+playwright-report/
+test-results/
+coverage/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+.sisyphus
+AGENTS.md
+CLAUDE.md
