@@ -75,6 +75,32 @@ Booking.com has no personal data export, so we use a logged-in Playwright sessio
 
 Re-export whenever the session expires (the CLI will print a clear "re-export your cookies" message when that happens).
 
+#### Google Maps saved-place lists (POIs)
+
+Restaurants, viewpoints, parking spots, cafés, etc. that you've saved into a Google Maps list. Rendered as small slate dots on the map; surfaced under "Nearest places" in the property side panel with the same driving-distance treatment as trails.
+
+1. In Google Maps, open a list you've saved (e.g. "Want to go" or a trip-specific list)
+2. Tap **Share** → **Copy link** — you get something like `https://maps.app.goo.gl/9fS49rrZSPHCftvH9`
+3. The list **must be public** ("anyone with the link can view"). Private/personal-only lists return an empty sign-in wall and are not supported in MVP.
+4. Create `data/google/lists.json`:
+
+```json
+{
+  "lists": [
+    { "url": "https://maps.app.goo.gl/9fS49rrZSPHCftvH9", "name": "Scotland Trip 2026" },
+    { "url": "https://maps.app.goo.gl/anotherListId" }
+  ]
+}
+```
+
+The `name` field is optional — when omitted, BackpackerMap reads the list title rendered by Google itself. Each list becomes a separate `collection` in the DB.
+
+**Re-ingest mirrors Google.** Each run of `ingest:google` makes the DB match the current state of the list: added places are inserted, modified places are updated in place (their DB `id` is preserved, so cached driving distances stay valid), and **removed places are deleted from the DB** along with their cached routes. The mirror is scoped per-collection — re-ingesting list "Dolomites" never touches POIs in another collection.
+
+Safety guard: if a scrape returns zero places (private list, selector broken, network blip), the ingest reports failure for that list and **does not delete** existing POIs.
+
+This ingest uses headless Playwright (same pipeline as Booking.com). The Google Maps page format is unofficial — expect this to break and need a selector update once or twice a year, like any web scrape.
+
 ### 4. Ingest
 
 ```bash
@@ -88,6 +114,7 @@ npm run ingest:trails               # GPX files → SQLite
 npm run ingest:airbnb -- --dry-run  # preview: list listing IDs/URLs from the export, no API calls
 npm run ingest:airbnb               # Airbnb export → pyairbnb → SQLite
 npm run ingest:booking              # Playwright wishlist scrape → JSON-LD → SQLite
+npm run ingest:google               # Playwright Google Maps list scrape → SQLite
 ```
 
 If your Airbnb export schema doesn't match the parser's assumptions, the `--dry-run`
@@ -179,6 +206,9 @@ What does NOT run in CI:
 | Discover mode returns no Airbnb results | DataDome may be blocking your IP; set `HTTPS_PROXY` to a residential proxy. Also confirm `pyairbnb` is installed (`pip show pyairbnb`) |
 | Discover mode returns no Booking results | Same — DataDome on Booking is stricter than on Airbnb. Set `HTTPS_PROXY`. Also note default cap is 30 detail-page fetches per search |
 | Discover-mode searches are slow (Booking) | Default is 5s delay × up to 30 hotels (90–150s worst case). Lower the `maxDetailFetches` value in [`src/server/server.ts`](./src/server/server.ts) for shorter searches at the cost of fewer results. Subsequent identical searches are cached for 10 minutes |
+| `ingest:google` reports `no places parsed — selector may be stale` for every list | Google changed the page format. Compare a fresh capture against `tests/fixtures/google/list-rpc.txt`; the parser heuristics in [`src/ingest/google.ts`](./src/ingest/google.ts) may need an update |
+| `ingest:google` reports `private list — sign-in required` | The Google Maps list is not set to public-shared. Open it on the web, click Share, and confirm "Anyone with the link can view" |
+| `ingest:google` reports `0 places enriched / 3 list(s)` and the page title in failures matches your list | Likely a CAPTCHA / DataDome challenge from Google. Set `HTTPS_PROXY` to a residential proxy. If that also fails, the list may be temporarily blocked; try again later |
 | Playwright fails to launch on macOS Gatekeeper | `xattr -d com.apple.quarantine ~/Library/Caches/ms-playwright/*/chrome-mac/Chromium.app` |
 | Port 3000 already in use | Set `PORT=3737` in `.env` so the API binds to that port. Then start the web dev server with `API_PORT=3737 npm --workspace web run dev` (Vite reads it from the shell env to set up its `/api` proxy) |
 
@@ -195,9 +225,9 @@ What does NOT run in CI:
 
 ```
 src/                       backend (TypeScript)
-  db/                      schema + repo + migrations (0001 init, 0002 candidate)
-  ingest/                  gpx, airbnb, booking, geocode (Nominatim), stealth, CLI
-  routing/                 OpenRouteService client + distance cache
+  db/                      schema + repo + migrations (0001 init, 0002 candidate, 0003 pois)
+  ingest/                  gpx, airbnb, booking, google-list, geocode (Nominatim), stealth, CLI
+  routing/                 OpenRouteService client + route cache (trails + pois)
   search/                  v2 Discover mode
     providers/             pyairbnb, booking-diy, 3 stubs (apify-airbnb, apify-booking, booking-demand-api)
     canonical.ts           sha1 cache key with bbox rounding
@@ -225,7 +255,7 @@ tests/
   fixtures/                GPX, Airbnb JSON, Booking HTML, ORS JSON
 data/                      (gitignored) user-supplied GPX, exports, cookies
 db/                        (gitignored) runtime SQLite + WAL/SHM sidecars
-.sisyphus/plans/           v1-plan.md and v2-discover.md — full designs + decisions logs
+.sisyphus/plans/           v1-plan.md, v2-discover.md, google-maps-poi.md — full designs + decisions logs
 ```
 
 ## License

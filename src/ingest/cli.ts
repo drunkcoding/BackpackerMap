@@ -3,11 +3,13 @@ import { openDb } from '../db/repo.ts';
 import { ingestTrails } from './trails.ts';
 import { dryRunAirbnb, ingestAirbnb } from './airbnb.ts';
 import { ingestBooking } from './booking.ts';
+import { ingestGoogle } from './google-list.ts';
 
 interface Env {
   TRAILS_DIR: string;
   AIRBNB_EXPORT_PATH: string;
   BOOKING_COOKIES_PATH: string;
+  GOOGLE_LISTS_PATH: string;
   DB_PATH: string;
 }
 
@@ -16,6 +18,7 @@ function loadEnv(): Env {
     TRAILS_DIR: process.env['TRAILS_DIR'] ?? './data/trails',
     AIRBNB_EXPORT_PATH: process.env['AIRBNB_EXPORT_PATH'] ?? './data/airbnb/personal_data.json',
     BOOKING_COOKIES_PATH: process.env['BOOKING_COOKIES_PATH'] ?? './data/booking/cookies.json',
+    GOOGLE_LISTS_PATH: process.env['GOOGLE_LISTS_PATH'] ?? './data/google/lists.json',
     DB_PATH: process.env['DB_PATH'] ?? './db/backpackermap.sqlite',
   };
 }
@@ -23,7 +26,7 @@ function loadEnv(): Env {
 async function main(): Promise<void> {
   const command = process.argv[2];
   if (!command) {
-    console.error('Usage: ingest <trails|airbnb|booking>');
+    console.error('Usage: ingest <trails|airbnb|booking|google>');
     process.exit(1);
   }
 
@@ -80,6 +83,23 @@ async function main(): Promise<void> {
         );
         if (result.failed.length > 0) {
           console.log(`[ingest:booking] ${result.failed.length} failure(s):`);
+          for (const f of result.failed) {
+            console.log(`  - ${f.url}: ${f.message}`);
+          }
+          if (result.enriched === 0) process.exitCode = 1;
+        }
+        break;
+      }
+      case 'google': {
+        const listsPath = resolve(process.cwd(), env.GOOGLE_LISTS_PATH);
+        console.log(`[ingest:google] reading lists from ${listsPath}`);
+        const result = await ingestGoogle(db, { listsPath });
+        const removedMsg = result.removed > 0 ? `, removed ${result.removed} stale` : '';
+        console.log(
+          `[ingest:google] enriched ${result.enriched} place(s) across ${result.totalLists} list(s)${removedMsg}`,
+        );
+        if (result.failed.length > 0) {
+          console.log(`[ingest:google] ${result.failed.length} failure(s):`);
           for (const f of result.failed) {
             console.log(`  - ${f.url}: ${f.message}`);
           }

@@ -24,7 +24,8 @@
     "ingest:trails": "node --env-file-if-exists=.env --import tsx/esm src/ingest/cli.ts trails",
     "ingest:airbnb": "node --env-file-if-exists=.env --import tsx/esm src/ingest/cli.ts airbnb",
     "ingest:booking": "node --env-file-if-exists=.env --import tsx/esm src/ingest/cli.ts booking",
-    "ingest:all": "npm run ingest:trails && npm run ingest:airbnb && npm run ingest:booking"
+    "ingest:google": "node --env-file-if-exists=.env --import tsx/esm src/ingest/cli.ts google",
+    "ingest:all": "npm run ingest:trails && npm run ingest:airbnb && npm run ingest:booking && npm run ingest:google"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
