@@ -211,10 +211,7 @@ describe('ingestGoogle (integration)', () => {
 
     const remaining = listPois(db);
     expect(remaining).toHaveLength(2);
-    expect(remaining.map((p) => p.name).sort()).toEqual([
-      'Loch Lomond Shore',
-      'The Drovers Inn',
-    ]);
+    expect(remaining.map((p) => p.name).sort()).toEqual(['Loch Lomond Shore', 'The Drovers Inn']);
   });
 
   it('mirrors Google: cleans up route_cache rows for removed POIs', async () => {
@@ -251,9 +248,10 @@ describe('ingestGoogle (integration)', () => {
     ).run(propRow.id, falls.id);
     expect(
       db
-        .prepare<[number, string, number], { c: number }>(
-          'SELECT COUNT(*) AS c FROM route_cache WHERE property_id = ? AND target_kind = ? AND target_id = ?',
-        )
+        .prepare<
+          [number, string, number],
+          { c: number }
+        >('SELECT COUNT(*) AS c FROM route_cache WHERE property_id = ? AND target_kind = ? AND target_id = ?')
         .get(propRow.id, 'poi', falls.id)?.c,
     ).toBe(1);
 
@@ -275,9 +273,10 @@ describe('ingestGoogle (integration)', () => {
 
     expect(
       db
-        .prepare<[number, string, number], { c: number }>(
-          'SELECT COUNT(*) AS c FROM route_cache WHERE property_id = ? AND target_kind = ? AND target_id = ?',
-        )
+        .prepare<
+          [number, string, number],
+          { c: number }
+        >('SELECT COUNT(*) AS c FROM route_cache WHERE property_id = ? AND target_kind = ? AND target_id = ?')
         .get(propRow.id, 'poi', falls.id)?.c,
     ).toBe(0);
   });
@@ -300,7 +299,10 @@ describe('ingestGoogle (integration)', () => {
     });
 
     await ingestGoogle(db, {
-      lists: [{ url: urlA, name: 'A' }, { url: urlB, name: 'B' }],
+      lists: [
+        { url: urlA, name: 'A' },
+        { url: urlB, name: 'B' },
+      ],
       fetcher: fetcherFromMap(map),
       perListDelayMs: 0,
     });

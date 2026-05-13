@@ -6,7 +6,8 @@ import { ingestAirbnb } from '../../src/ingest/airbnb.ts';
 
 const MOCK = join(process.cwd(), 'scripts', '__mock_pyairbnb.py');
 const FIXTURE = join(process.cwd(), 'tests', 'fixtures', 'airbnb', 'personal_data.sample.json');
-const PYTHON_BIN = process.env['PYTHON_BIN'] ?? (process.platform === 'win32' ? 'python' : 'python3');
+const PYTHON_BIN =
+  process.env['PYTHON_BIN'] ?? (process.platform === 'win32' ? 'python' : 'python3');
 
 describe('ingestAirbnb (integration with mock Python)', () => {
   it('enriches every wishlisted listing into property rows', async () => {

@@ -1,11 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  gpxExternalId,
-  haversineMeters,
-  parseGpx,
-} from '../../src/ingest/gpx.ts';
+import { gpxExternalId, haversineMeters, parseGpx } from '../../src/ingest/gpx.ts';
 
 const FIXTURE_DIR = join(process.cwd(), 'tests', 'fixtures', 'trails');
 
@@ -33,8 +29,7 @@ describe('parseGpx', () => {
   it('lengthMeters matches expected haversine total within 1m', () => {
     const r = parseGpx(load('simple.gpx'));
     const expected =
-      haversineMeters(56.7867, -5.0035, 56.79, -5.0) +
-      haversineMeters(56.79, -5.0, 56.795, -4.995);
+      haversineMeters(56.7867, -5.0035, 56.79, -5.0) + haversineMeters(56.79, -5.0, 56.795, -4.995);
     expect(Math.abs(r.lengthMeters - expected)).toBeLessThan(1);
   });
 

@@ -20,9 +20,7 @@ import Database from 'better-sqlite3';
 const dbPath = resolve(process.env['DB_PATH'] ?? 'db/backpackermap.sqlite');
 const db = new Database(dbPath);
 
-const before = db
-  .prepare<[], { c: number }>(`SELECT COUNT(*) AS c FROM search_cache`)
-  .get();
+const before = db.prepare<[], { c: number }>(`SELECT COUNT(*) AS c FROM search_cache`).get();
 const empties = db
   .prepare<[], { c: number }>(`SELECT COUNT(*) AS c FROM search_cache WHERE candidate_ids = '[]'`)
   .get();

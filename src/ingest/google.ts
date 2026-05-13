@@ -61,10 +61,7 @@ export function extractPlacesFromRpc(
   return parseListResponse(rpcBody, options).places;
 }
 
-export function parseListResponse(
-  body: string,
-  options: ParsePlacesOptions = {},
-): ParsedList {
+export function parseListResponse(body: string, options: ParsePlacesOptions = {}): ParsedList {
   const max = options.maxPlaces ?? 500;
   const cleaned = stripJsonProlog(body);
 
@@ -140,9 +137,10 @@ function parseEntitylistPlace(entry: unknown): RawPlace | null {
     const t = s.trim();
     return t.length >= 8 && t.length <= 300 && t.includes(',');
   });
-  const note = entry.length > 3 && typeof entry[3] === 'string' && entry[3].trim().length > 0
-    ? entry[3].trim()
-    : null;
+  const note =
+    entry.length > 3 && typeof entry[3] === 'string' && entry[3].trim().length > 0
+      ? entry[3].trim()
+      : null;
 
   return {
     name: name.trim(),
@@ -167,10 +165,7 @@ function extractPlaceIdFromEntry(inner: unknown[]): string | null {
   return null;
 }
 
-function pickFirstStringMatching(
-  node: unknown,
-  pred: (s: string) => boolean,
-): string | null {
+function pickFirstStringMatching(node: unknown, pred: (s: string) => boolean): string | null {
   if (typeof node === 'string' && pred(node)) return node;
   if (Array.isArray(node)) {
     for (const child of node) {
@@ -183,10 +178,20 @@ function pickFirstStringMatching(
 
 function findFirstLatLng(node: unknown): { lat: number; lng: number } | null {
   if (Array.isArray(node)) {
-    if (node.length === 2 && isCoord(node[0]) && isCoord(node[1]) && isValidLatLng(node[0], node[1])) {
+    if (
+      node.length === 2 &&
+      isCoord(node[0]) &&
+      isCoord(node[1]) &&
+      isValidLatLng(node[0], node[1])
+    ) {
       return { lat: node[0], lng: node[1] };
     }
-    if (node.length >= 4 && isCoord(node[2]) && isCoord(node[3]) && isValidLatLng(node[2], node[3])) {
+    if (
+      node.length >= 4 &&
+      isCoord(node[2]) &&
+      isCoord(node[3]) &&
+      isValidLatLng(node[2], node[3])
+    ) {
       return { lat: node[2], lng: node[3] };
     }
     for (const child of node) {
@@ -278,12 +283,7 @@ function isPlaceArrayHeuristic(node: unknown): node is unknown[] {
   return false;
 }
 
-function walkHeuristic(
-  node: unknown,
-  out: RawPlace[],
-  seen: Set<string>,
-  max: number,
-): void {
+function walkHeuristic(node: unknown, out: RawPlace[], seen: Set<string>, max: number): void {
   if (out.length >= max) return;
   if (!Array.isArray(node)) return;
 
@@ -353,23 +353,35 @@ function findNoteWithinPlace(
 }
 
 const KNOWN_CATEGORIES = new Set([
-  'Restaurant', 'Cafe', 'Café', 'Bar', 'Pub', 'Hotel', 'Lodge',
-  'Tourist attraction', 'Park', 'Lake', 'Mountain', 'Viewpoint',
-  'Museum', 'Gallery', 'Store', 'Shop', 'Supermarket', 'Bakery',
-  'Bus stop', 'Train station', 'Parking', 'Gas station',
+  'Restaurant',
+  'Cafe',
+  'Café',
+  'Bar',
+  'Pub',
+  'Hotel',
+  'Lodge',
+  'Tourist attraction',
+  'Park',
+  'Lake',
+  'Mountain',
+  'Viewpoint',
+  'Museum',
+  'Gallery',
+  'Store',
+  'Shop',
+  'Supermarket',
+  'Bakery',
+  'Bus stop',
+  'Train station',
+  'Parking',
+  'Gas station',
 ]);
 
-export function rawPlaceToPoiInput(
-  raw: RawPlace,
-  sourceId: number,
-  collection: string,
-): PoiInput {
+export function rawPlaceToPoiInput(raw: RawPlace, sourceId: number, collection: string): PoiInput {
   const externalId =
     raw.placeId ??
     createHash('sha256')
-      .update(
-        `${raw.name}|${raw.lat.toFixed(6)}|${raw.lng.toFixed(6)}|${collection}`,
-      )
+      .update(`${raw.name}|${raw.lat.toFixed(6)}|${raw.lng.toFixed(6)}|${collection}`)
       .digest('hex')
       .slice(0, 32);
 

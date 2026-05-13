@@ -45,6 +45,10 @@ describe('nearestTrails', () => {
       { id: 2, trailheadLat: 46.5, trailheadLng: 12.0 },
     ];
     expect(nearestTrails(scotland, mixed, 10, 50).map((t) => t.id)).toEqual([1]);
-    expect(nearestTrails(scotland, mixed, 10, 2000).map((t) => t.id).sort()).toEqual([1, 2]);
+    expect(
+      nearestTrails(scotland, mixed, 10, 2000)
+        .map((t) => t.id)
+        .sort(),
+    ).toEqual([1, 2]);
   });
 });

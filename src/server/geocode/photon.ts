@@ -122,7 +122,8 @@ export interface PhotonClient {
 export function createPhotonClient(options: PhotonClientOptions = {}): PhotonClient {
   const fetchImpl = options.fetchImpl ?? fetch;
   const endpoint = options.endpoint ?? 'https://photon.komoot.io/api/';
-  const userAgent = options.userAgent ?? 'BackpackerMap/0.1 (https://github.com/example/backpackermap)';
+  const userAgent =
+    options.userAgent ?? 'BackpackerMap/0.1 (https://github.com/example/backpackermap)';
 
   return {
     async search(q: string): Promise<GeocodeResult[]> {
@@ -148,8 +149,7 @@ export function createPhotonClient(options: PhotonClientOptions = {}): PhotonCli
         const name = typeof props['name'] === 'string' ? props['name'] : null;
         if (!name) continue;
         const osmTypeRaw = typeof props['osm_type'] === 'string' ? props['osm_type'] : '';
-        const osmType: 'N' | 'W' | 'R' =
-          osmTypeRaw === 'W' ? 'W' : osmTypeRaw === 'R' ? 'R' : 'N';
+        const osmType: 'N' | 'W' | 'R' = osmTypeRaw === 'W' ? 'W' : osmTypeRaw === 'R' ? 'R' : 'N';
         const osmId = Number(props['osm_id']);
         if (!Number.isInteger(osmId)) continue;
         const center = { lat, lng };

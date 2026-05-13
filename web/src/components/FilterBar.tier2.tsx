@@ -51,9 +51,7 @@ export function FilterBarTier2({ filters, setFilter }: FilterBarTier2Props) {
           min={0}
           max={10}
           value={filters.minBedrooms ?? ''}
-          onChange={(e) =>
-            setFilter('minBedrooms', e.target.value ? Number(e.target.value) : null)
-          }
+          onChange={(e) => setFilter('minBedrooms', e.target.value ? Number(e.target.value) : null)}
           data-testid="filter-min-bedrooms"
         />
       </label>
@@ -65,9 +63,7 @@ export function FilterBarTier2({ filters, setFilter }: FilterBarTier2Props) {
           max={10}
           step={0.5}
           value={filters.minRating ?? ''}
-          onChange={(e) =>
-            setFilter('minRating', e.target.value ? Number(e.target.value) : null)
-          }
+          onChange={(e) => setFilter('minRating', e.target.value ? Number(e.target.value) : null)}
           data-testid="filter-min-rating"
         />
       </label>

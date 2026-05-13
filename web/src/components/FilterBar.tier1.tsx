@@ -7,9 +7,7 @@ export interface FilterBarTier1Props {
 
 export function FilterBarTier1({ filters, setFilter }: FilterBarTier1Props) {
   const datesInvalid =
-    filters.checkin !== null &&
-    filters.checkout !== null &&
-    filters.checkin >= filters.checkout;
+    filters.checkin !== null && filters.checkout !== null && filters.checkin >= filters.checkout;
 
   return (
     <div className="bpm-filter-group" data-testid="filter-tier1">
@@ -65,9 +63,7 @@ export function FilterBarTier1({ filters, setFilter }: FilterBarTier1Props) {
           min={0}
           step={10}
           value={filters.priceMin ?? ''}
-          onChange={(e) =>
-            setFilter('priceMin', e.target.value ? Number(e.target.value) : null)
-          }
+          onChange={(e) => setFilter('priceMin', e.target.value ? Number(e.target.value) : null)}
           data-testid="filter-price-min"
         />
       </label>
@@ -78,9 +74,7 @@ export function FilterBarTier1({ filters, setFilter }: FilterBarTier1Props) {
           min={0}
           step={10}
           value={filters.priceMax ?? ''}
-          onChange={(e) =>
-            setFilter('priceMax', e.target.value ? Number(e.target.value) : null)
-          }
+          onChange={(e) => setFilter('priceMax', e.target.value ? Number(e.target.value) : null)}
           data-testid="filter-price-max"
         />
       </label>

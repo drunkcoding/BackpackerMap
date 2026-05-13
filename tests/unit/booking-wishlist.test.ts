@@ -10,10 +10,7 @@ describe('parseWishlistHtml', () => {
     const html = readFileSync(join(FIXTURE_DIR, 'wishlist.sample.html'), 'utf8');
     const items = parseWishlistHtml(html);
 
-    expect(items.map((i) => i.hotelId).sort()).toEqual([
-      'cairngorms-lodge',
-      'loch-ness-inn',
-    ]);
+    expect(items.map((i) => i.hotelId).sort()).toEqual(['cairngorms-lodge', 'loch-ness-inn']);
 
     const cairngorms = items.find((i) => i.hotelId === 'cairngorms-lodge');
     expect(cairngorms?.name).toBe('Cairngorms Lodge');

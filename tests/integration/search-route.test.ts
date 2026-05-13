@@ -24,7 +24,11 @@ function fakeResult(provider: 'airbnb' | 'booking', id: string): ProviderResult 
   };
 }
 
-function makeApp(db: Database, dispatchResults: ProviderResult[], warnings: Array<{provider: string; message: string}> = []) {
+function makeApp(
+  db: Database,
+  dispatchResults: ProviderResult[],
+  warnings: Array<{ provider: string; message: string }> = [],
+) {
   const dispatcher: SearchDispatcher = {
     search: vi.fn(async () => ({
       results: dispatchResults,
@@ -82,9 +86,11 @@ describe('GET /api/search', () => {
   });
 
   it('partial-results: warnings header set when a provider fails', async () => {
-    const { app } = makeApp(db, [fakeResult('airbnb', '1')], [
-      { provider: 'booking-diy', message: 'datadome blocked' },
-    ]);
+    const { app } = makeApp(
+      db,
+      [fakeResult('airbnb', '1')],
+      [{ provider: 'booking-diy', message: 'datadome blocked' }],
+    );
     const res = await request(app).get(`/api/search${VALID_BBOX}`);
     expect(res.status).toBe(200);
     expect(res.headers['x-search-warnings']).toContain('booking-diy');

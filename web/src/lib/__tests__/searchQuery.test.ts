@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DEFAULT_FILTERS,
-  filtersFingerprint,
-  filtersToSearchParams,
-} from '../searchQuery';
+import { DEFAULT_FILTERS, filtersFingerprint, filtersToSearchParams } from '../searchQuery';
 
 const bbox = { north: 57.2, south: 57.0, east: -3.7, west: -3.9 };
 

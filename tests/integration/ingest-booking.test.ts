@@ -85,11 +85,12 @@ describe('ingestBooking (integration with stubbed fetcher)', () => {
         <script type="application/ld+json">
           {"@type":"Hotel","name":"No Geo Inn","address":{"@type":"PostalAddress","streetAddress":"1 Test St","addressLocality":"Aviemore","addressCountry":"GB"}}
         </script>`;
-      const fetchImpl = vi.fn(async () =>
-        new Response(JSON.stringify([{ lat: '57.1958', lon: '-3.8262' }]), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        }),
+      const fetchImpl = vi.fn(
+        async () =>
+          new Response(JSON.stringify([{ lat: '57.1958', lon: '-3.8262' }]), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
       );
       const geocoder = createNominatimGeocoder({
         fetchImpl: fetchImpl as unknown as typeof fetch,
@@ -97,8 +98,7 @@ describe('ingestBooking (integration with stubbed fetcher)', () => {
       });
 
       const result = await ingestBooking(db, {
-        fetchHtml: async (url) =>
-          url.endsWith('mywishlist.html') ? wishlistHtml : detailHtml,
+        fetchHtml: async (url) => (url.endsWith('mywishlist.html') ? wishlistHtml : detailHtml),
         geocoder,
       });
 

@@ -17,15 +17,15 @@ function makeQuery(over: Partial<SearchQuery> = {}): SearchQuery {
 
 describe('nfltEncode', () => {
   it('encodes classes, free cancellation, review score', () => {
-    expect(
-      nfltEncode({ classes: [4, 5], freeCancellation: true, reviewScore: 8.0 }),
-    ).toBe('class=4;class=5;fc=1;review_score=80');
+    expect(nfltEncode({ classes: [4, 5], freeCancellation: true, reviewScore: 8.0 })).toBe(
+      'class=4;class=5;fc=1;review_score=80',
+    );
   });
 
   it('encodes hotel-type IDs and amenities', () => {
-    expect(
-      nfltEncode({ htIds: [204, 216], amenityFacilities: [107, 433] }),
-    ).toBe('ht_id=204;ht_id=216;hotelfacility=107;hotelfacility=433');
+    expect(nfltEncode({ htIds: [204, 216], amenityFacilities: [107, 433] })).toBe(
+      'ht_id=204;ht_id=216;hotelfacility=107;hotelfacility=433',
+    );
   });
 
   it('empty filter object yields empty string', () => {

@@ -55,8 +55,8 @@ function samplePoi(sourceId: number, externalId = 'ChIJ_abc'): PoiInput {
     collection: 'Scotland Trip',
     externalId,
     name: 'The Drovers Inn',
-    lat: 56.2710,
-    lng: -4.7150,
+    lat: 56.271,
+    lng: -4.715,
     category: 'restaurant',
     note: 'great rest stop',
     url: 'https://maps.app.goo.gl/example',
@@ -213,7 +213,11 @@ describe('db/repo', () => {
     ];
     const result = replaceCollectionPois(db, sourceId, 'Scotland Trip', reduced);
     expect(result).toEqual({ inserted: 0, updated: 2, removed: 1, total: 2 });
-    expect(listPois(db).map((p) => p.name).sort()).toEqual(['A', 'C']);
+    expect(
+      listPois(db)
+        .map((p) => p.name)
+        .sort(),
+    ).toEqual(['A', 'C']);
   });
 
   it('replaceCollectionPois: deletes orphan route_cache rows for removed POIs', () => {
@@ -256,14 +260,10 @@ describe('db/repo', () => {
   it('replaceCollectionPois: rejects inputs with mismatched sourceId or collection', () => {
     const sourceId = createSource(db, 'google_maps');
     expect(() =>
-      replaceCollectionPois(db, sourceId, 'A', [
-        { ...samplePoi(sourceId, 'x'), collection: 'B' },
-      ]),
+      replaceCollectionPois(db, sourceId, 'A', [{ ...samplePoi(sourceId, 'x'), collection: 'B' }]),
     ).toThrow(/mismatched/);
     expect(() =>
-      replaceCollectionPois(db, sourceId, 'A', [
-        { ...samplePoi(999, 'x'), collection: 'A' },
-      ]),
+      replaceCollectionPois(db, sourceId, 'A', [{ ...samplePoi(999, 'x'), collection: 'A' }]),
     ).toThrow(/mismatched/);
   });
 

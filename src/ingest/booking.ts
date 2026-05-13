@@ -36,11 +36,12 @@ function normaliseCookie(c: unknown): Cookie {
   const sameSiteRaw = String(r['sameSite'] ?? r['same_site'] ?? 'Lax').toLowerCase();
   const sameSite: Cookie['sameSite'] =
     sameSiteRaw === 'strict' ? 'Strict' : sameSiteRaw === 'none' ? 'None' : 'Lax';
-  const expires = typeof r['expirationDate'] === 'number'
-    ? (r['expirationDate'] as number)
-    : typeof r['expires'] === 'number'
-      ? (r['expires'] as number)
-      : -1;
+  const expires =
+    typeof r['expirationDate'] === 'number'
+      ? (r['expirationDate'] as number)
+      : typeof r['expires'] === 'number'
+        ? (r['expires'] as number)
+        : -1;
   return {
     name: String(r['name']),
     value: String(r['value']),
@@ -72,8 +73,7 @@ export function parseWishlistHtml(html: string): BookingWishlistItem[] {
       .find('[data-testid="title"], h3, h4, .sr-hotel__name, [data-testid="header-title"]')
       .first();
     const name =
-      (titleNode.text() || $(el).attr('aria-label') || $(el).attr('title') || '').trim() ||
-      hotelId;
+      (titleNode.text() || $(el).attr('aria-label') || $(el).attr('title') || '').trim() || hotelId;
 
     const url = href.startsWith('http') ? href : `https://www.booking.com${href}`;
 
@@ -127,9 +127,14 @@ export function extractJsonLd(html: string): BookingPropertyData {
       const t = node['@type'];
       const type = Array.isArray(t) ? t.map(String) : [String(t ?? '')];
       const isHotelLike = type.some((x) =>
-        ['Hotel', 'LodgingBusiness', 'Accommodation', 'BedAndBreakfast', 'Hostel', 'Resort'].includes(
-          x,
-        ),
+        [
+          'Hotel',
+          'LodgingBusiness',
+          'Accommodation',
+          'BedAndBreakfast',
+          'Hostel',
+          'Resort',
+        ].includes(x),
       );
       if (!isHotelLike) continue;
       if (lat === null || lng === null) {
@@ -174,7 +179,10 @@ export function extractJsonLd(html: string): BookingPropertyData {
   });
 
   if (priceLabel === null) {
-    const live = $('[data-testid="price-and-discounted-price"], .prco-valign-middle-helper').first().text().trim();
+    const live = $('[data-testid="price-and-discounted-price"], .prco-valign-middle-helper')
+      .first()
+      .text()
+      .trim();
     if (live) priceLabel = live.replace(/\s+/g, ' ').slice(0, 60);
   }
 
@@ -214,7 +222,9 @@ export interface IngestBookingResult {
   failed: Array<{ url: string; message: string }>;
 }
 
-function resolveProxy(opts: IngestBookingOptions['proxy']): IngestBookingOptions['proxy'] | undefined {
+function resolveProxy(
+  opts: IngestBookingOptions['proxy'],
+): IngestBookingOptions['proxy'] | undefined {
   if (opts) return opts;
   const url = process.env['HTTPS_PROXY'] ?? process.env['HTTP_PROXY'];
   if (!url) return undefined;

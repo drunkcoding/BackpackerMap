@@ -80,12 +80,16 @@ describe('HTTP API', () => {
     const { propertyId, trailId } = seed(db);
     const app = createApp({ db, ors });
 
-    const first = await request(app).get(`/api/distance?propertyId=${propertyId}&trailId=${trailId}`);
+    const first = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&trailId=${trailId}`,
+    );
     expect(first.status).toBe(200);
     expect(first.body).toEqual({ meters: 42000, seconds: 2280, cached: false });
     expect(orsCalls).toBe(1);
 
-    const second = await request(app).get(`/api/distance?propertyId=${propertyId}&trailId=${trailId}`);
+    const second = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&trailId=${trailId}`,
+    );
     expect(second.status).toBe(200);
     expect(second.body).toEqual({ meters: 42000, seconds: 2280, cached: true });
     expect(orsCalls).toBe(1);
@@ -121,8 +125,8 @@ describe('HTTP API', () => {
     expect(res.body[0]).toMatchObject({
       collection: 'Scotland 2026',
       name: 'The Drovers Inn',
-      lat: 56.2710,
-      lng: -4.7150,
+      lat: 56.271,
+      lng: -4.715,
       note: 'great rest stop',
     });
   });
@@ -150,9 +154,7 @@ describe('HTTP API', () => {
   it('GET /api/distance with invalid targetKind returns 400', async () => {
     seed(db);
     const app = createApp({ db, ors });
-    const res = await request(app).get(
-      '/api/distance?propertyId=1&targetKind=bogus&targetId=1',
-    );
+    const res = await request(app).get('/api/distance?propertyId=1&targetKind=bogus&targetId=1');
     expect(res.status).toBe(400);
   });
 

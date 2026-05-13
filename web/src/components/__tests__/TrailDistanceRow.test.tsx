@@ -46,9 +46,7 @@ describe('<TrailDistanceRow />', () => {
 
   it('shows "off-road" on 422 (no routable road near coords)', async () => {
     mockFetch(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ error: 'no driving route' }), { status: 422 }),
-      ),
+      Promise.resolve(new Response(JSON.stringify({ error: 'no driving route' }), { status: 422 })),
     );
     render(<TrailDistanceRow index={1} trail={trail} propertyId={1} />);
     await waitFor(() => {

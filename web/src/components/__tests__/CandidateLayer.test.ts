@@ -21,7 +21,10 @@ const candidate = (over: Partial<ApiCandidate> = {}): ApiCandidate => ({
 
 describe('filterUnsavedCandidates', () => {
   it('removes candidates that match a saved property by (provider, externalId)', () => {
-    const candidates = [candidate({ id: 1, externalId: 'a' }), candidate({ id: 2, externalId: 'b' })];
+    const candidates = [
+      candidate({ id: 1, externalId: 'a' }),
+      candidate({ id: 2, externalId: 'b' }),
+    ];
     const saved = [{ provider: 'airbnb' as const, externalId: 'a' }];
     const out = filterUnsavedCandidates(candidates, saved);
     expect(out).toHaveLength(1);

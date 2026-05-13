@@ -88,11 +88,7 @@ describe('search route cache policy', () => {
   });
 
   it('does NOT write a cache row when dispatch returns empty AND warned', async () => {
-    const app = makeApp(
-      db,
-      [],
-      [{ provider: 'booking-diy', message: 'all hotels failed parse' }],
-    );
+    const app = makeApp(db, [], [{ provider: 'booking-diy', message: 'all hotels failed parse' }]);
     await request(app).get(`/api/search${VALID_BBOX_PARAMS}`);
     const key = cacheKey(canonicaliseQuery(VALID_BBOX_QUERY), 'all');
     const row = getCachedSearch(db, key, 60_000);

@@ -57,10 +57,7 @@ function FlyToBbox({ bbox }: { bbox: BBox | null | undefined }) {
   const map = useMap();
   useEffect(() => {
     if (!bbox) return;
-    const bounds = L.latLngBounds(
-      L.latLng(bbox.south, bbox.west),
-      L.latLng(bbox.north, bbox.east),
-    );
+    const bounds = L.latLngBounds(L.latLng(bbox.south, bbox.west), L.latLng(bbox.north, bbox.east));
     map.flyToBounds(bounds, { padding: [40, 40], duration: 0.8 });
   }, [bbox, map]);
   return null;

@@ -16,8 +16,7 @@ function pointInRing(lng: number, lat: number, ring: Ring): boolean {
     const yi = a[1];
     const xj = b[0];
     const yj = b[1];
-    const intersect =
-      yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi + 0) + xi;
+    const intersect = yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi + 0) + xi;
     if (intersect) inside = !inside;
   }
   return inside;

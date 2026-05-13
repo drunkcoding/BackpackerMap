@@ -13,7 +13,17 @@ function nomResponse(geom: unknown | null) {
 
 describe('PolygonFetcher.fetchPolygon', () => {
   it('returns the geojson polygon for a valid OSM id', async () => {
-    const geom = { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] };
+    const geom = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 0],
+        ],
+      ],
+    };
     const fetchImpl = vi.fn(async () => nomResponse(geom)) as unknown as typeof fetch;
     const fetcher = createPolygonFetcher({ fetchImpl });
     const result = await fetcher.fetchPolygon('R', 1234);

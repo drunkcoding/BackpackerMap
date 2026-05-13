@@ -11,10 +11,7 @@ export interface IngestTrailsResult {
 
 const DEFAULT_IGNORE = ['**/node_modules/**', '**/.git/**', '**/.venv/**', '**/.svn/**'];
 
-export async function ingestTrails(
-  trailsDir: string,
-  db: Database,
-): Promise<IngestTrailsResult> {
+export async function ingestTrails(trailsDir: string, db: Database): Promise<IngestTrailsResult> {
   const absDir = isAbsolute(trailsDir) ? trailsDir : resolve(process.cwd(), trailsDir);
 
   const files = await fg('**/*.gpx', {

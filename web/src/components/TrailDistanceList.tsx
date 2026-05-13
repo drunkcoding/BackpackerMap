@@ -15,16 +15,13 @@ export function TrailDistanceList({
   limit = 10,
   onHover,
 }: TrailDistanceListProps) {
-  const top = nearestTrails(
-    { lat: property.lat, lng: property.lng },
-    trails,
-    limit,
-  );
+  const top = nearestTrails({ lat: property.lat, lng: property.lng }, trails, limit);
 
   if (top.length === 0) {
-    const message = trails.length === 0
-      ? 'No trails ingested yet.'
-      : 'No trails within 1000 km of this property.';
+    const message =
+      trails.length === 0
+        ? 'No trails ingested yet.'
+        : 'No trails within 1000 km of this property.';
     return <p style={{ color: 'var(--graphite)' }}>{message}</p>;
   }
 

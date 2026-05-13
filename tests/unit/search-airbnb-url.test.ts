@@ -36,7 +36,11 @@ describe('buildAirbnbSearchUrl', () => {
   it('omits null dates and zero-count guests', () => {
     const url = new URL(
       buildAirbnbSearchUrl(
-        makeQuery({ checkin: null, checkout: null, guests: { adults: 2, children: 0, infants: 0 } }),
+        makeQuery({
+          checkin: null,
+          checkout: null,
+          guests: { adults: 2, children: 0, infants: 0 },
+        }),
       ),
     );
     expect(url.searchParams.has('checkin')).toBe(false);

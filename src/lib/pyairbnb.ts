@@ -71,10 +71,7 @@ function runOnce(
   });
 }
 
-export async function enrichAirbnb(
-  url: string,
-  options: EnrichOptions,
-): Promise<AirbnbEnrichment> {
+export async function enrichAirbnb(url: string, options: EnrichOptions): Promise<AirbnbEnrichment> {
   const pythonBin = options.pythonBin ?? (process.platform === 'win32' ? 'python' : 'python3');
   const timeoutMs = options.timeoutMs ?? 30_000;
   const retries = Math.max(0, options.retries ?? 1);
@@ -84,8 +81,7 @@ export async function enrichAirbnb(
     passthroughEnv['HTTPS_PROXY'] = proxyUrl;
     passthroughEnv['HTTP_PROXY'] = proxyUrl;
   }
-  const mergedEnv =
-    options.env || proxyUrl ? { ...passthroughEnv, ...options.env } : undefined;
+  const mergedEnv = options.env || proxyUrl ? { ...passthroughEnv, ...options.env } : undefined;
 
   let lastErr: PyAirbnbError | null = null;
   for (let attempt = 0; attempt <= retries; attempt++) {

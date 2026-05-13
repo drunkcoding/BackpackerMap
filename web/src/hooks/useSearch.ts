@@ -6,7 +6,12 @@ import { filtersToSearchParams, filtersFingerprint, type FilterState } from '../
 export type SearchState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'success'; candidates: ApiCandidate[]; cached: boolean; warnings: Array<{ provider: string; message: string }> }
+  | {
+      status: 'success';
+      candidates: ApiCandidate[];
+      cached: boolean;
+      warnings: Array<{ provider: string; message: string }>;
+    }
   | { status: 'error'; error: Error };
 
 export interface UseSearchOptions {

@@ -95,11 +95,7 @@ export function SidePanel({
                   Select a list above to see nearby places.
                 </p>
               ) : (
-                <PoiDistanceList
-                  property={property}
-                  pois={visiblePois}
-                  showHeading={false}
-                />
+                <PoiDistanceList property={property} pois={visiblePois} showHeading={false} />
               )}
             </>
           )}

@@ -38,10 +38,7 @@ export function useVisibleCollections(): UseVisibleCollectionsResult {
     persist(visible);
   }, [visible]);
 
-  const isVisible = useCallback(
-    (collection: string) => visible.has(collection),
-    [visible],
-  );
+  const isVisible = useCallback((collection: string) => visible.has(collection), [visible]);
 
   const toggle = useCallback((collection: string) => {
     setVisibleState((prev) => {

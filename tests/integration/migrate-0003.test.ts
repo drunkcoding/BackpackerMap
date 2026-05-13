@@ -58,16 +58,18 @@ describe('migration 0003_pois', () => {
       ]);
 
       const trail = db
-        .prepare<[], { id: number; kind: string }>(
-          'SELECT t.id AS id, s.kind AS kind FROM trail t JOIN source s ON s.id = t.source_id',
-        )
+        .prepare<
+          [],
+          { id: number; kind: string }
+        >('SELECT t.id AS id, s.kind AS kind FROM trail t JOIN source s ON s.id = t.source_id')
         .get();
       expect(trail).toEqual({ id: 1, kind: 'alltrails' });
 
       const property = db
-        .prepare<[], { id: number; kind: string }>(
-          'SELECT p.id AS id, s.kind AS kind FROM property p JOIN source s ON s.id = p.source_id',
-        )
+        .prepare<
+          [],
+          { id: number; kind: string }
+        >('SELECT p.id AS id, s.kind AS kind FROM property p JOIN source s ON s.id = p.source_id')
         .get();
       expect(property).toEqual({ id: 1, kind: 'airbnb' });
 
@@ -99,8 +101,19 @@ describe('migration 0003_pois', () => {
         .map((r) => r.name);
       expect(poiCols).toEqual(
         expect.arrayContaining([
-          'id', 'source_id', 'collection', 'external_id', 'name',
-          'lat', 'lng', 'category', 'note', 'url', 'address', 'raw', 'ingested_at',
+          'id',
+          'source_id',
+          'collection',
+          'external_id',
+          'name',
+          'lat',
+          'lng',
+          'category',
+          'note',
+          'url',
+          'address',
+          'raw',
+          'ingested_at',
         ]),
       );
 
@@ -110,7 +123,12 @@ describe('migration 0003_pois', () => {
         .map((r) => r.name);
       expect(routeCols).toEqual(
         expect.arrayContaining([
-          'property_id', 'target_kind', 'target_id', 'meters', 'seconds', 'computed_at',
+          'property_id',
+          'target_kind',
+          'target_id',
+          'meters',
+          'seconds',
+          'computed_at',
         ]),
       );
     } finally {
@@ -126,9 +144,7 @@ describe('migration 0003_pois', () => {
       const fk = db.pragma('foreign_keys', { simple: true });
       expect(fk).toBe(1);
 
-      const violations = db
-        .prepare<[], unknown>('PRAGMA foreign_key_check')
-        .all();
+      const violations = db.prepare<[], unknown>('PRAGMA foreign_key_check').all();
       expect(violations).toEqual([]);
 
       expect(() =>

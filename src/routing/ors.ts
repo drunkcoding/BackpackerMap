@@ -107,7 +107,11 @@ export function createOrsClient(options: OrsClientOptions): {
 
       const json = (await res.json()) as OrsRouteResponse;
       const summary = json.routes?.[0]?.summary;
-      if (!summary || typeof summary.distance !== 'number' || typeof summary.duration !== 'number') {
+      if (
+        !summary ||
+        typeof summary.distance !== 'number' ||
+        typeof summary.duration !== 'number'
+      ) {
         throw new OrsRequestError(
           'ORS response missing routes[0].summary',
           res.status,
@@ -144,9 +148,7 @@ export async function getCachedDrivingDistance(
   }
   const coords = deps.getCoords(propertyId, targetKind, targetId);
   if (!coords) {
-    throw new Error(
-      `unknown property/${targetKind} pair: ${propertyId}/${targetId}`,
-    );
+    throw new Error(`unknown property/${targetKind} pair: ${propertyId}/${targetId}`);
   }
   const fresh = await deps.client.getDrivingDistance(coords.from, coords.to);
   setRoute(db, propertyId, targetKind, targetId, fresh.meters, fresh.seconds);

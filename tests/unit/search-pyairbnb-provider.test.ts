@@ -4,7 +4,8 @@ import { PyairbnbProvider } from '../../src/search/providers/pyairbnb.ts';
 import { ProviderError, type SearchQuery } from '../../src/search/types.ts';
 
 const MOCK = join(process.cwd(), 'scripts', '__mock_pyairbnb_search.py');
-const PYTHON_BIN = process.env['PYTHON_BIN'] ?? (process.platform === 'win32' ? 'python' : 'python3');
+const PYTHON_BIN =
+  process.env['PYTHON_BIN'] ?? (process.platform === 'win32' ? 'python' : 'python3');
 
 function makeQuery(over: Partial<SearchQuery> = {}): SearchQuery {
   return {
@@ -43,9 +44,7 @@ describe('PyairbnbProvider', () => {
       timeoutMs: 5_000,
       retries: 0,
     });
-    const out = await p.search(
-      makeQuery({ bbox: { north: 0, south: 0, east: 0, west: 0 } }),
-    );
+    const out = await p.search(makeQuery({ bbox: { north: 0, south: 0, east: 0, west: 0 } }));
     expect(out).toEqual([]);
   });
 

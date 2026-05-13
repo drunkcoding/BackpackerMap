@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { enrichAirbnb, PyAirbnbError } from '../../src/lib/pyairbnb.ts';
 
 const MOCK = join(process.cwd(), 'scripts', '__mock_pyairbnb.py');
-const PYTHON_BIN = process.env['PYTHON_BIN'] ?? (process.platform === 'win32' ? 'python' : 'python3');
+const PYTHON_BIN =
+  process.env['PYTHON_BIN'] ?? (process.platform === 'win32' ? 'python' : 'python3');
 
 describe('enrichAirbnb (Python spawn wrapper)', () => {
   it('parses JSON output from the Python script', async () => {

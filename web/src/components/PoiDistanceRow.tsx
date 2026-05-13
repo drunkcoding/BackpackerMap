@@ -17,9 +17,7 @@ export function PoiDistanceRow({ index, poi, propertyId }: PoiDistanceRowProps) 
       <span className="bpm-trail-index">{String(index).padStart(2, '0')}</span>
       <div>
         <p className="bpm-trail-name">{poi.name}</p>
-        {(poi.note || poi.address) && (
-          <p className="bpm-trail-meta">{poi.note ?? poi.address}</p>
-        )}
+        {(poi.note || poi.address) && <p className="bpm-trail-meta">{poi.note ?? poi.address}</p>}
       </div>
       <div
         className={
@@ -31,7 +29,8 @@ export function PoiDistanceRow({ index, poi, propertyId }: PoiDistanceRowProps) 
         aria-live="polite"
       >
         {distance.status === 'loading' && '· · ·'}
-        {distance.status === 'error' && (distance.error.message.includes('422') ? '— off-road' : '— unreachable')}
+        {distance.status === 'error' &&
+          (distance.error.message.includes('422') ? '— off-road' : '— unreachable')}
         {distance.status === 'success' && (
           <>
             {formatDistance(distance.data.meters)}

@@ -20,19 +20,15 @@ describe('extractPlacesFromRpc', () => {
     expect(places).toHaveLength(3);
 
     const names = places.map((p) => p.name).sort();
-    expect(names).toEqual([
-      'Falls of Falloch viewpoint',
-      'Loch Lomond Shore',
-      'The Drovers Inn',
-    ]);
+    expect(names).toEqual(['Falls of Falloch viewpoint', 'Loch Lomond Shore', 'The Drovers Inn']);
   });
 
   it('extracts lat/lng correctly', () => {
     const places = extractPlacesFromRpc(loadFixture('list-rpc.txt'));
     const drovers = places.find((p) => p.name === 'The Drovers Inn');
     expect(drovers).toBeDefined();
-    expect(drovers!.lat).toBeCloseTo(56.2710, 4);
-    expect(drovers!.lng).toBeCloseTo(-4.7150, 4);
+    expect(drovers!.lat).toBeCloseTo(56.271, 4);
+    expect(drovers!.lng).toBeCloseTo(-4.715, 4);
   });
 
   it('extracts place_id when present', () => {
@@ -95,9 +91,45 @@ describe('extractPlacesFromRpc', () => {
             null,
             null,
             [
-              [null, null, ['Null Island', null, [0, 0], 'ChIJ_xxxxxxxxxxxxxxxxxxxxxx1', null, 'nowhere', null]],
-              [null, null, ['Out of range', null, [200, 300], 'ChIJ_xxxxxxxxxxxxxxxxxxxxxx2', null, 'invalid', null]],
-              [null, null, ['Valid place', null, [51.5, -0.1], 'ChIJ_xxxxxxxxxxxxxxxxxxxxxx3', null, 'London', null]],
+              [
+                null,
+                null,
+                [
+                  'Null Island',
+                  null,
+                  [0, 0],
+                  'ChIJ_xxxxxxxxxxxxxxxxxxxxxx1',
+                  null,
+                  'nowhere',
+                  null,
+                ],
+              ],
+              [
+                null,
+                null,
+                [
+                  'Out of range',
+                  null,
+                  [200, 300],
+                  'ChIJ_xxxxxxxxxxxxxxxxxxxxxx2',
+                  null,
+                  'invalid',
+                  null,
+                ],
+              ],
+              [
+                null,
+                null,
+                [
+                  'Valid place',
+                  null,
+                  [51.5, -0.1],
+                  'ChIJ_xxxxxxxxxxxxxxxxxxxxxx3',
+                  null,
+                  'London',
+                  null,
+                ],
+              ],
             ],
           ]),
         ],
@@ -116,16 +148,18 @@ describe('parseListResponse (entitylist/getlist real shape)', () => {
     expect(result.places).toHaveLength(8);
 
     const names = result.places.map((p) => p.name).sort();
-    expect(names).toEqual([
-      'Cinque Torri',
-      "Saeed's water fountain",
-      'Karersee',
-      'Langkofel',
-      'Lagazuoi',
-      'Tre Cime di Lavaredo',
-      'Seceda',
-      'Furchetta',
-    ].sort());
+    expect(names).toEqual(
+      [
+        'Cinque Torri',
+        "Saeed's water fountain",
+        'Karersee',
+        'Langkofel',
+        'Lagazuoi',
+        'Tre Cime di Lavaredo',
+        'Seceda',
+        'Furchetta',
+      ].sort(),
+    );
   });
 
   it('extracts valid Dolomites coordinates', () => {

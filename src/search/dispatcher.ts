@@ -1,9 +1,4 @@
-import type {
-  ProviderName,
-  ProviderResult,
-  SearchProvider,
-  SearchQuery,
-} from './types.ts';
+import type { ProviderName, ProviderResult, SearchProvider, SearchQuery } from './types.ts';
 
 export interface DispatchResult {
   results: ProviderResult[];

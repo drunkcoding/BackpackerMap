@@ -8,7 +8,15 @@ export function PhotoPlaceholder() {
         stroke="currentColor"
         strokeWidth="1.5"
       />
-      <rect x="150" y="110" width="20" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <rect
+        x="150"
+        y="110"
+        width="20"
+        height="30"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
     </svg>
   );
 }

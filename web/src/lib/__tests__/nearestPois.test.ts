@@ -46,7 +46,11 @@ describe('nearestPois', () => {
       { id: 2, lat: 46.5, lng: 12.0 },
     ];
     expect(nearestPois(scotland, mixed, 10, 50).map((p) => p.id)).toEqual([1]);
-    expect(nearestPois(scotland, mixed, 10, 2000).map((p) => p.id).sort()).toEqual([1, 2]);
+    expect(
+      nearestPois(scotland, mixed, 10, 2000)
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual([1, 2]);
   });
 
   it('exposes DEFAULT_NEAREST_RADIUS_KM = 1000', () => {

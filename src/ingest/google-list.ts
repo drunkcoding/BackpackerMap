@@ -70,7 +70,9 @@ export interface IngestGoogleResult {
   failed: Array<{ url: string; message: string }>;
 }
 
-function resolveProxy(opts: IngestGoogleOptions['proxy']): IngestGoogleOptions['proxy'] | undefined {
+function resolveProxy(
+  opts: IngestGoogleOptions['proxy'],
+): IngestGoogleOptions['proxy'] | undefined {
   if (opts) return opts;
   const url = process.env['HTTPS_PROXY'] ?? process.env['HTTP_PROXY'];
   if (!url) return undefined;
@@ -80,9 +82,7 @@ function resolveProxy(opts: IngestGoogleOptions['proxy']): IngestGoogleOptions['
 function deriveCollectionName(cfg: GoogleListConfig, fetched: FetchedList): string {
   if (cfg.name && cfg.name.trim().length > 0) return cfg.name.trim();
   if (fetched.pageTitle && fetched.pageTitle.trim().length > 0) {
-    return fetched.pageTitle
-      .replace(/\s*[-–|]\s*Google Maps$/i, '')
-      .trim();
+    return fetched.pageTitle.replace(/\s*[-–|]\s*Google Maps$/i, '').trim();
   }
   try {
     const u = new URL(fetched.finalUrl);
@@ -98,7 +98,8 @@ export async function ingestGoogle(
   db: Database,
   options: IngestGoogleOptions = {},
 ): Promise<IngestGoogleResult> {
-  const lists = options.lists ?? (options.listsPath ? loadListsConfig(options.listsPath).lists : []);
+  const lists =
+    options.lists ?? (options.listsPath ? loadListsConfig(options.listsPath).lists : []);
   if (lists.length === 0) {
     return { totalLists: 0, totalPlaces: 0, enriched: 0, removed: 0, failed: [] };
   }

@@ -34,7 +34,16 @@ describe('<PropertyHero />', () => {
   });
 
   it('uses Booking.com label for booking provider', () => {
-    render(<PropertyHero property={{ ...base, provider: 'booking', externalId: 'lodge', url: 'https://booking.com/x' }} />);
+    render(
+      <PropertyHero
+        property={{
+          ...base,
+          provider: 'booking',
+          externalId: 'lodge',
+          url: 'https://booking.com/x',
+        }}
+      />,
+    );
     expect(screen.getByText(/Open on Booking\.com/)).toBeInTheDocument();
   });
 });

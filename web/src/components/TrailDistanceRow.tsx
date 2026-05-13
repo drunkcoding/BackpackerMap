@@ -27,9 +27,7 @@ export function TrailDistanceRow({ index, trail, propertyId, onHover }: TrailDis
           {trail.elevationGainMeters !== null
             ? `▲ ${Math.round(trail.elevationGainMeters)} m gain`
             : ''}
-          {trail.lengthMeters !== null
-            ? ` · ${(trail.lengthMeters / 1000).toFixed(1)} km`
-            : ''}
+          {trail.lengthMeters !== null ? ` · ${(trail.lengthMeters / 1000).toFixed(1)} km` : ''}
         </p>
       </div>
       <div
@@ -42,7 +40,8 @@ export function TrailDistanceRow({ index, trail, propertyId, onHover }: TrailDis
         aria-live="polite"
       >
         {distance.status === 'loading' && '· · ·'}
-        {distance.status === 'error' && (distance.error.message.includes('422') ? '— off-road' : '— unreachable')}
+        {distance.status === 'error' &&
+          (distance.error.message.includes('422') ? '— off-road' : '— unreachable')}
         {distance.status === 'success' && (
           <>
             {formatDistance(distance.data.meters)}

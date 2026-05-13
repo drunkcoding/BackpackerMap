@@ -62,9 +62,7 @@ async function main(): Promise<void> {
         }
         console.log(`[ingest:airbnb] reading export from ${exportPath}`);
         const result = await ingestAirbnb(exportPath, db);
-        console.log(
-          `[ingest:airbnb] enriched ${result.enriched}/${result.total} listings`,
-        );
+        console.log(`[ingest:airbnb] enriched ${result.enriched}/${result.total} listings`);
         if (result.failed.length > 0) {
           console.log(`[ingest:airbnb] ${result.failed.length} failure(s):`);
           for (const f of result.failed) {
@@ -78,9 +76,7 @@ async function main(): Promise<void> {
         const cookiesPath = resolve(process.cwd(), env.BOOKING_COOKIES_PATH);
         console.log(`[ingest:booking] using cookies from ${cookiesPath}`);
         const result = await ingestBooking(db, { cookiesPath });
-        console.log(
-          `[ingest:booking] enriched ${result.enriched}/${result.total} hotels`,
-        );
+        console.log(`[ingest:booking] enriched ${result.enriched}/${result.total} hotels`);
         if (result.failed.length > 0) {
           console.log(`[ingest:booking] ${result.failed.length} failure(s):`);
           for (const f of result.failed) {
@@ -117,6 +113,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error(err instanceof Error ? err.stack ?? err.message : String(err));
+  console.error(err instanceof Error ? (err.stack ?? err.message) : String(err));
   process.exit(1);
 });

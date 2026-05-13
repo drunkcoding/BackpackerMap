@@ -13,14 +13,8 @@ export function hasSignificantBBoxChange(
   if (!previous) return true;
   const area = (next.east - next.west) * (next.north - next.south);
   if (area <= 0) return true;
-  const dx = Math.max(
-    Math.abs(next.east - previous.east),
-    Math.abs(next.west - previous.west),
-  );
-  const dy = Math.max(
-    Math.abs(next.north - previous.north),
-    Math.abs(next.south - previous.south),
-  );
+  const dx = Math.max(Math.abs(next.east - previous.east), Math.abs(next.west - previous.west));
+  const dy = Math.max(Math.abs(next.north - previous.north), Math.abs(next.south - previous.south));
   const shiftArea = dx * dy;
   return shiftArea / area > threshold;
 }

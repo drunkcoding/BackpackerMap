@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { BookingDIYProvider, parseBookingSearchHtml } from '../../src/search/providers/booking-diy.ts';
+import {
+  BookingDIYProvider,
+  parseBookingSearchHtml,
+} from '../../src/search/providers/booking-diy.ts';
 import { createNominatimGeocoder } from '../../src/ingest/geocode.ts';
 import type { SearchQuery } from '../../src/search/types.ts';
 
@@ -68,11 +71,12 @@ describe('BookingDIYProvider', () => {
       <script type="application/ld+json">
         {"@type":"Hotel","name":"No Geo","address":{"@type":"PostalAddress","streetAddress":"1 High St","addressLocality":"Aviemore","addressCountry":"GB"}}
       </script>`;
-    const geocoderFetch = vi.fn(async () =>
-      new Response(JSON.stringify([{ lat: '57.0', lon: '-3.8' }]), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      }),
+    const geocoderFetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify([{ lat: '57.0', lon: '-3.8' }]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
     );
     const geocoder = createNominatimGeocoder({
       fetchImpl: geocoderFetch as unknown as typeof fetch,

@@ -113,17 +113,15 @@ export function App() {
           </span>
         )}
       </div>
-      {discoverEnabled &&
-        searchState.status === 'success' &&
-        searchState.warnings.length > 0 && (
-          <output className="bpm-search-warnings">
-            {searchState.warnings.map((w) => (
-              <span key={w.provider} className="bpm-search-warning">
-                <strong>{w.provider}</strong> failed: {w.message}
-              </span>
-            ))}
-          </output>
-        )}
+      {discoverEnabled && searchState.status === 'success' && searchState.warnings.length > 0 && (
+        <output className="bpm-search-warnings">
+          {searchState.warnings.map((w) => (
+            <span key={w.provider} className="bpm-search-warning">
+              <strong>{w.provider}</strong> failed: {w.message}
+            </span>
+          ))}
+        </output>
+      )}
       {discoverEnabled && searchState.status === 'error' && (
         <div className="bpm-search-warnings" role="alert">
           <span className="bpm-search-warning">

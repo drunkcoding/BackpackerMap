@@ -30,7 +30,14 @@ describe('extractJsonLd (Booking detail page)', () => {
 
   it('returns nulls when no JSON-LD present', () => {
     const r = extractJsonLd('<html><body>no jsonld</body></html>');
-    expect(r).toEqual({ lat: null, lng: null, name: null, photo: null, priceLabel: null, address: null });
+    expect(r).toEqual({
+      lat: null,
+      lng: null,
+      name: null,
+      photo: null,
+      priceLabel: null,
+      address: null,
+    });
   });
 
   it('extracts address from structured PostalAddress', () => {

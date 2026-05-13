@@ -6,12 +6,7 @@ import type { TrailInput } from '../db/repo.ts';
 
 const EARTH_RADIUS_METERS = 6_371_008.8;
 
-export function haversineMeters(
-  aLat: number,
-  aLng: number,
-  bLat: number,
-  bLng: number,
-): number {
+export function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const φ1 = toRad(aLat);
   const φ2 = toRad(bLat);
@@ -49,9 +44,7 @@ function parseGpxXml(xml: string): ParsedGpx {
   try {
     doc = parser.parseFromString(xml, 'text/xml');
   } catch (err) {
-    throw new Error(
-      `GPX XML parse error: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    throw new Error(`GPX XML parse error: ${err instanceof Error ? err.message : String(err)}`);
   }
   if (fatals.length > 0) {
     throw new Error(`GPX XML parse error: ${fatals.join('; ')}`);
@@ -78,8 +71,8 @@ function parseGpxXml(xml: string): ParsedGpx {
       geom.type === 'LineString'
         ? [geom.coordinates as number[][]]
         : geom.type === 'MultiLineString'
-        ? (geom.coordinates as number[][][])
-        : [];
+          ? (geom.coordinates as number[][][])
+          : [];
     for (const seg of coordsLists) {
       for (const c of seg) {
         const lng = c[0]!;
@@ -131,9 +124,7 @@ export function parseGpx(xml: string): GpxParseResult {
 
   const geojson = JSON.stringify({
     type: 'LineString',
-    coordinates: points.map((p) =>
-      p.ele !== null ? [p.lng, p.lat, p.ele] : [p.lng, p.lat],
-    ),
+    coordinates: points.map((p) => (p.ele !== null ? [p.lng, p.lat, p.ele] : [p.lng, p.lat])),
   });
 
   return {
@@ -146,7 +137,11 @@ export function parseGpx(xml: string): GpxParseResult {
   };
 }
 
-export function parseGpxFile(absolutePath: string, trailsDir: string, sourceId: number): TrailInput {
+export function parseGpxFile(
+  absolutePath: string,
+  trailsDir: string,
+  sourceId: number,
+): TrailInput {
   const xml = readFileSync(absolutePath, 'utf8');
   const parsed = parseGpx(xml);
   const externalId = gpxExternalId(absolutePath, trailsDir);

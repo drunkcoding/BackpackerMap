@@ -15,11 +15,7 @@ export function PoiDistanceList({
   limit = 10,
   showHeading = true,
 }: PoiDistanceListProps) {
-  const top = nearestPois(
-    { lat: property.lat, lng: property.lng },
-    pois,
-    limit,
-  );
+  const top = nearestPois({ lat: property.lat, lng: property.lng }, pois, limit);
 
   if (top.length === 0) {
     return (

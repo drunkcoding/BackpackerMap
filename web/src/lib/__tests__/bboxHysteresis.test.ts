@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { hasSignificantBBoxChange } from '../bboxHysteresis';
 
-const bbox = (n: number, s: number, e: number, w: number) => ({ north: n, south: s, east: e, west: w });
+const bbox = (n: number, s: number, e: number, w: number) => ({
+  north: n,
+  south: s,
+  east: e,
+  west: w,
+});
 
 describe('hasSignificantBBoxChange', () => {
   it('returns true on first call (previous=null)', () => {
