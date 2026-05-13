@@ -47,6 +47,26 @@ body {
   z-index: 580;
 }
 
+.bpm-search-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-5);
+  background-color: #fdf3e3;
+  border-bottom: 1px solid #e6c98a;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: #6b4a1b;
+  z-index: 580;
+}
+
+.bpm-search-warning strong {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-right: var(--space-2);
+}
+
 .bpm-discover-toggle {
   font-family: var(--font-mono);
   font-size: var(--text-xs);

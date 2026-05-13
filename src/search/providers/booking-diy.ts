@@ -139,7 +139,9 @@ export class BookingDIYProvider implements SearchProvider {
           rawJson: JSON.stringify({ card, jsonld }),
         });
       } catch (err) {
-        void err;
+        console.warn(
+          `[booking-diy] detail fetch failed for ${card.url}: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
       if (delay > 0 && i < slice.length - 1) {
         await new Promise((r) => setTimeout(r, delay));

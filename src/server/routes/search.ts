@@ -127,8 +127,12 @@ export function createSearchRouter(deps: SearchRouteDeps): Router {
       ids.push(candidate.id);
     }
 
-    putCachedSearch(deps.db, key, JSON.stringify(query), 'all', ids);
-    if (dispatched.warnings.length > 0) {
+    // Don't poison the cache with results from a partially-failed dispatch.
+    // If ANY provider warned, skip caching so the user gets a fresh attempt
+    // next time instead of being served the degraded result for 10 min.
+    if (dispatched.warnings.length === 0) {
+      putCachedSearch(deps.db, key, JSON.stringify(query), 'all', ids);
+    } else {
       res.setHeader('X-Search-Warnings', JSON.stringify(dispatched.warnings));
     }
     const candidates = getCandidates(deps.db, ids);
