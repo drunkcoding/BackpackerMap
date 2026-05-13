@@ -18,7 +18,7 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "build": "tsc -p tsconfig.build.json && npm --workspace web run build",
+    "build": "npm --workspace web run build",
     "dev": "node --env-file-if-exists=.env --import tsx/esm src/server/server.ts",
     "dev:web": "npm --workspace web run dev",
     "ingest:trails": "node --env-file-if-exists=.env --import tsx/esm src/ingest/cli.ts trails",
