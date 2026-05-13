@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useProperties } from './hooks/useProperties';
 import { useTrails } from './hooks/useTrails';
 import { usePois } from './hooks/usePois';
+import { useVisibleCollections } from './hooks/useVisibleCollections';
 import { useSearchFilters } from './hooks/useSearchFilters';
 import { useSearch } from './hooks/useSearch';
 import { TopBar } from './components/TopBar';
@@ -48,6 +49,12 @@ export function App() {
   const propertyList = propsState.status === 'success' ? propsState.data : [];
   const trailList = trailsState.status === 'success' ? trailsState.data : [];
   const poiList = poisState.status === 'success' ? poisState.data : [];
+
+  const { isVisible: isCollectionVisible, toggle: toggleCollection } = useVisibleCollections();
+  const visiblePoiList = useMemo(
+    () => poiList.filter((p) => isCollectionVisible(p.collection)),
+    [poiList, isCollectionVisible],
+  );
 
   const candidates = discoverEnabled && searchState.status === 'success' ? searchState.candidates : [];
   const unsavedCandidates = filterUnsavedCandidates(
@@ -113,7 +120,7 @@ export function App() {
             }}
             onBoundsChange={setBbox}
           >
-            {poiList.length > 0 && <PoiLayer pois={poiList} />}
+            {visiblePoiList.length > 0 && <PoiLayer pois={visiblePoiList} />}
             {discoverEnabled && (
               <CandidateLayer
                 candidates={unsavedCandidates}
@@ -130,6 +137,8 @@ export function App() {
           property={sidePanelTarget}
           trails={trailList}
           pois={poiList}
+          isCollectionVisible={isCollectionVisible}
+          onToggleCollection={toggleCollection}
           onClose={() => {
             setSelectedPropertyId(null);
             setSelectedCandidateId(null);

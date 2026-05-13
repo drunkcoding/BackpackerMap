@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { SidePanel } from '../SidePanel';
-import type { ApiProperty } from '../../api';
+import type { ApiPoi, ApiProperty } from '../../api';
 
 const property: ApiProperty = {
   id: 1,
@@ -9,8 +9,8 @@ const property: ApiProperty = {
   externalId: '1',
   name: 'Test',
   url: 'https://example.com',
-  lat: 0,
-  lng: 0,
+  lat: 56.3,
+  lng: -4.7,
   priceLabel: null,
   photoUrl: null,
 };
@@ -42,30 +42,65 @@ describe('<SidePanel />', () => {
     expect(screen.getByText('Test')).toBeInTheDocument();
   });
 
-  it('renders Nearest places section when pois are provided', () => {
+  const samplePoi: ApiPoi = {
+    id: 5,
+    collection: 'X',
+    externalId: 'e',
+    name: 'The Drovers Inn',
+    lat: 56.27,
+    lng: -4.71,
+    category: null,
+    note: 'great rest stop',
+    url: null,
+    address: null,
+  };
+
+  it('renders Nearest places section + chip row when pois are provided, but list hidden by default (unselected)', () => {
     render(
       <SidePanel
         property={property}
         trails={[]}
-        pois={[
-          {
-            id: 5,
-            collection: 'X',
-            externalId: 'e',
-            name: 'The Drovers Inn',
-            lat: 56.27,
-            lng: -4.71,
-            category: null,
-            note: 'great rest stop',
-            url: null,
-            address: null,
-          },
-        ]}
+        pois={[samplePoi]}
+        isCollectionVisible={() => false}
+        onToggleCollection={() => {}}
         onClose={() => {}}
       />,
     );
     expect(screen.getByText('Nearest places')).toBeInTheDocument();
+    expect(screen.getByTestId('poi-collection-chip-X')).toBeInTheDocument();
+    expect(screen.getByTestId('poi-empty-hint')).toHaveTextContent(/Select a list/);
+    expect(screen.queryByText('The Drovers Inn')).not.toBeInTheDocument();
+  });
+
+  it('renders the POI list when its collection is marked visible', () => {
+    render(
+      <SidePanel
+        property={property}
+        trails={[]}
+        pois={[samplePoi]}
+        isCollectionVisible={(c) => c === 'X'}
+        onToggleCollection={() => {}}
+        onClose={() => {}}
+      />,
+    );
     expect(screen.getByText('The Drovers Inn')).toBeInTheDocument();
+    expect(screen.queryByTestId('poi-empty-hint')).not.toBeInTheDocument();
+  });
+
+  it('clicking a collection chip calls onToggleCollection with the collection name', () => {
+    const onToggle = vi.fn();
+    render(
+      <SidePanel
+        property={property}
+        trails={[]}
+        pois={[samplePoi]}
+        isCollectionVisible={() => false}
+        onToggleCollection={onToggle}
+        onClose={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('poi-collection-chip-X'));
+    expect(onToggle).toHaveBeenCalledWith('X');
   });
 
   it('does NOT render Nearest places section when pois is empty', () => {

@@ -22,7 +22,10 @@ export function TrailDistanceList({
   );
 
   if (top.length === 0) {
-    return <p style={{ color: 'var(--graphite)' }}>No trails ingested yet.</p>;
+    const message = trails.length === 0
+      ? 'No trails ingested yet.'
+      : 'No trails within 1000 km of this property.';
+    return <p style={{ color: 'var(--graphite)' }}>{message}</p>;
   }
 
   return (

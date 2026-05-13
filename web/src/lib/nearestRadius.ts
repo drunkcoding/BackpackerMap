@@ -1,0 +1,1 @@
+export const DEFAULT_NEAREST_RADIUS_KM = 1000;

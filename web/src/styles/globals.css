@@ -413,6 +413,48 @@ body {
   margin-bottom: var(--space-3);
 }
 
+.bpm-poi-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.bpm-poi-chip {
+  font-family: var(--font-mono);
+  font-size: var(--text-xxs);
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border: 1px dashed var(--paper-rule);
+  background: transparent;
+  color: var(--graphite);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-ink),
+    border-color var(--dur-fast) var(--ease-ink),
+    color var(--dur-fast) var(--ease-ink);
+}
+
+.bpm-poi-chip:hover {
+  border-style: solid;
+  background-color: rgba(201, 166, 97, 0.06);
+}
+
+.bpm-poi-chip.is-active {
+  background-color: var(--graphite);
+  border-color: var(--graphite);
+  color: var(--paper);
+}
+
+.bpm-empty-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-xxs);
+  color: var(--graphite);
+  font-style: italic;
+  margin: var(--space-2) 0;
+  opacity: 0.7;
+}
+
 .bpm-trail-row {
   display: grid;
   grid-template-columns: 28px 1fr auto;
