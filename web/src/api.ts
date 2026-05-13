@@ -35,6 +35,21 @@ export interface ApiDistance {
   cached: boolean;
 }
 
+export type ApiTargetKind = 'trail' | 'poi';
+
+export interface ApiPoi {
+  id: number;
+  collection: string;
+  externalId: string;
+  name: string;
+  lat: number;
+  lng: number;
+  category: string | null;
+  note: string | null;
+  url: string | null;
+  address: string | null;
+}
+
 export interface ApiCandidate {
   id: number;
   provider: 'airbnb' | 'booking';
@@ -70,8 +85,17 @@ export const api = {
   properties: () => getJson<ApiProperty[]>('/api/properties'),
   trails: () => getJson<ApiTrail[]>('/api/trails'),
   trail: (id: number) => getJson<ApiTrailDetail>(`/api/trails/${id}`),
-  distance: (propertyId: number, trailId: number, signal?: AbortSignal) =>
-    getJson<ApiDistance>(`/api/distance?propertyId=${propertyId}&trailId=${trailId}`, signal ? { signal } : {}),
+  pois: () => getJson<ApiPoi[]>('/api/pois'),
+  distance: (
+    propertyId: number,
+    targetKind: ApiTargetKind,
+    targetId: number,
+    signal?: AbortSignal,
+  ) =>
+    getJson<ApiDistance>(
+      `/api/distance?propertyId=${propertyId}&targetKind=${targetKind}&targetId=${targetId}`,
+      signal ? { signal } : {},
+    ),
   search: (params: URLSearchParams, signal?: AbortSignal) =>
     getJson<ApiSearchResponse>(`/api/search?${params.toString()}`, signal ? { signal } : {}),
   promoteCandidate: (id: number) =>

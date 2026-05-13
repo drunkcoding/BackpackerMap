@@ -209,6 +209,7 @@ What does NOT run in CI:
 | `ingest:google` reports `no places parsed — selector may be stale` for every list | Google changed the page format. Compare a fresh capture against `tests/fixtures/google/list-rpc.txt`; the parser heuristics in [`src/ingest/google.ts`](./src/ingest/google.ts) may need an update |
 | `ingest:google` reports `private list — sign-in required` | The Google Maps list is not set to public-shared. Open it on the web, click Share, and confirm "Anyone with the link can view" |
 | `ingest:google` reports `0 places enriched / 3 list(s)` and the page title in failures matches your list | Likely a CAPTCHA / DataDome challenge from Google. Set `HTTPS_PROXY` to a residential proxy. If that also fails, the list may be temporarily blocked; try again later |
+| Google Maps POIs render but no driving distances appear in the side panel | The first paint queues an ORS call per POI. If you have many POIs × properties, you may have hit the ORS 2,000/day cap — check server logs for `429`. Cache makes this a once-only cost per pair |
 | Playwright fails to launch on macOS Gatekeeper | `xattr -d com.apple.quarantine ~/Library/Caches/ms-playwright/*/chrome-mac/Chromium.app` |
 | Port 3000 already in use | Set `PORT=3737` in `.env` so the API binds to that port. Then start the web dev server with `API_PORT=3737 npm --workspace web run dev` (Vite reads it from the shell env to set up its `/api` proxy) |
 
@@ -243,9 +244,9 @@ web/                       frontend (Vite + React)
   src/App.tsx              shell
   src/api.ts               typed fetch client
   src/components/          UI components (saved + Discover)
-  src/hooks/               useProperties, useTrails, useDistance, useSearch, useSearchFilters
+  src/hooks/               useProperties, useTrails, usePois, useDistance, useSearch, useSearchFilters
   src/lib/                 pure: formatCoord, formatDistance, formatDuration, haversine,
-                           nearestTrails, bboxHysteresis, searchQuery
+                           nearestTrails, nearestPois, bboxHysteresis, searchQuery
   src/icons/               inline SVG components
   src/styles/              tokens.css + globals.css + textures.css
 scripts/                   pyairbnb_enrich.py + pyairbnb_search.py + their test mocks

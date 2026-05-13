@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useProperties } from './hooks/useProperties';
 import { useTrails } from './hooks/useTrails';
+import { usePois } from './hooks/usePois';
 import { useSearchFilters } from './hooks/useSearchFilters';
 import { useSearch } from './hooks/useSearch';
 import { TopBar } from './components/TopBar';
@@ -10,6 +11,7 @@ import { EmptyState } from './components/EmptyState';
 import { DiscoverToggle } from './components/DiscoverToggle';
 import { FilterBar } from './components/FilterBar';
 import { CandidateLayer, filterUnsavedCandidates } from './components/CandidateLayer';
+import { PoiLayer } from './components/PoiLayer';
 import { PromoteButton } from './components/PromoteButton';
 import type { BBox } from './lib/bboxHysteresis';
 import type { ApiCandidate, ApiProperty } from './api';
@@ -32,6 +34,7 @@ export function App() {
   const [propertiesVersion, setPropertiesVersion] = useState(0);
   const propsState = useProperties(propertiesVersion);
   const trailsState = useTrails();
+  const poisState = usePois();
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
   const [hoveredTrailId, setHoveredTrailId] = useState<number | null>(null);
@@ -44,6 +47,7 @@ export function App() {
 
   const propertyList = propsState.status === 'success' ? propsState.data : [];
   const trailList = trailsState.status === 'success' ? trailsState.data : [];
+  const poiList = poisState.status === 'success' ? poisState.data : [];
 
   const candidates = discoverEnabled && searchState.status === 'success' ? searchState.candidates : [];
   const unsavedCandidates = filterUnsavedCandidates(
@@ -59,7 +63,11 @@ export function App() {
       ? candidateAsProperty(selectedCandidate)
       : null;
 
-  const isEmpty = propertyList.length === 0 && trailList.length === 0 && !discoverEnabled;
+  const isEmpty =
+    propertyList.length === 0 &&
+    trailList.length === 0 &&
+    poiList.length === 0 &&
+    !discoverEnabled;
 
   useEffect(() => {
     if (!discoverEnabled) setSelectedCandidateId(null);
@@ -105,6 +113,7 @@ export function App() {
             }}
             onBoundsChange={setBbox}
           >
+            {poiList.length > 0 && <PoiLayer pois={poiList} />}
             {discoverEnabled && (
               <CandidateLayer
                 candidates={unsavedCandidates}
@@ -120,6 +129,7 @@ export function App() {
         <SidePanel
           property={sidePanelTarget}
           trails={trailList}
+          pois={poiList}
           onClose={() => {
             setSelectedPropertyId(null);
             setSelectedCandidateId(null);

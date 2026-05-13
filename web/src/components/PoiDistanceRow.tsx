@@ -1,36 +1,25 @@
-import type { ApiTrail } from '../api';
+import type { ApiPoi } from '../api';
 import { formatDistance } from '../lib/formatDistance';
 import { formatDuration } from '../lib/formatDuration';
 import { useDistance } from '../hooks/useDistance';
 
-export interface TrailDistanceRowProps {
+export interface PoiDistanceRowProps {
   index: number;
-  trail: ApiTrail;
+  poi: ApiPoi;
   propertyId: number;
-  onHover?: (trailId: number | null) => void;
 }
 
-export function TrailDistanceRow({ index, trail, propertyId, onHover }: TrailDistanceRowProps) {
-  const distance = useDistance(propertyId, 'trail', trail.id);
+export function PoiDistanceRow({ index, poi, propertyId }: PoiDistanceRowProps) {
+  const distance = useDistance(propertyId, 'poi', poi.id);
 
   return (
-    <li
-      className="bpm-trail-row"
-      onMouseEnter={() => onHover?.(trail.id)}
-      onMouseLeave={() => onHover?.(null)}
-      data-testid={`trail-row-${trail.id}`}
-    >
+    <li className="bpm-trail-row" data-testid={`poi-row-${poi.id}`}>
       <span className="bpm-trail-index">{String(index).padStart(2, '0')}</span>
       <div>
-        <p className="bpm-trail-name">{trail.name}</p>
-        <p className="bpm-trail-meta">
-          {trail.elevationGainMeters !== null
-            ? `▲ ${Math.round(trail.elevationGainMeters)} m gain`
-            : ''}
-          {trail.lengthMeters !== null
-            ? ` · ${(trail.lengthMeters / 1000).toFixed(1)} km`
-            : ''}
-        </p>
+        <p className="bpm-trail-name">{poi.name}</p>
+        {(poi.note || poi.address) && (
+          <p className="bpm-trail-meta">{poi.note ?? poi.address}</p>
+        )}
       </div>
       <div
         className={
@@ -38,7 +27,7 @@ export function TrailDistanceRow({ index, trail, propertyId, onHover }: TrailDis
           (distance.status === 'loading' ? ' bpm-trail-distance-loading' : '') +
           (distance.status === 'error' ? ' bpm-trail-distance-error' : '')
         }
-        data-testid={`trail-distance-${trail.id}`}
+        data-testid={`poi-distance-${poi.id}`}
         aria-live="polite"
       >
         {distance.status === 'loading' && '· · ·'}

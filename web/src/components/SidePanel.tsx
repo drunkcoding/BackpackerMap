@@ -1,17 +1,26 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import type { ApiProperty, ApiTrail } from '../api';
+import type { ApiPoi, ApiProperty, ApiTrail } from '../api';
 import { PropertyHero } from './PropertyHero';
 import { TrailDistanceList } from './TrailDistanceList';
+import { PoiDistanceList } from './PoiDistanceList';
 
 export interface SidePanelProps {
   property: ApiProperty | null;
   trails: ApiTrail[];
+  pois?: ApiPoi[];
   onClose: () => void;
   onHoverTrail?: (trailId: number | null) => void;
   extraAction?: ReactNode;
 }
 
-export function SidePanel({ property, trails, onClose, onHoverTrail, extraAction }: SidePanelProps) {
+export function SidePanel({
+  property,
+  trails,
+  pois,
+  onClose,
+  onHoverTrail,
+  extraAction,
+}: SidePanelProps) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const open = property !== null;
 
@@ -44,6 +53,12 @@ export function SidePanel({ property, trails, onClose, onHoverTrail, extraAction
             trails={trails}
             {...(onHoverTrail ? { onHover: onHoverTrail } : {})}
           />
+          {pois && pois.length > 0 && (
+            <>
+              <hr className="bpm-divider" />
+              <PoiDistanceList property={property} pois={pois} />
+            </>
+          )}
         </>
       )}
     </aside>

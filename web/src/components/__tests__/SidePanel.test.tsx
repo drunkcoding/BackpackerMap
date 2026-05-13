@@ -41,4 +41,35 @@ describe('<SidePanel />', () => {
     expect(panel.getAttribute('aria-hidden')).toBe('false');
     expect(screen.getByText('Test')).toBeInTheDocument();
   });
+
+  it('renders Nearest places section when pois are provided', () => {
+    render(
+      <SidePanel
+        property={property}
+        trails={[]}
+        pois={[
+          {
+            id: 5,
+            collection: 'X',
+            externalId: 'e',
+            name: 'The Drovers Inn',
+            lat: 56.27,
+            lng: -4.71,
+            category: null,
+            note: 'great rest stop',
+            url: null,
+            address: null,
+          },
+        ]}
+        onClose={() => {}}
+      />,
+    );
+    expect(screen.getByText('Nearest places')).toBeInTheDocument();
+    expect(screen.getByText('The Drovers Inn')).toBeInTheDocument();
+  });
+
+  it('does NOT render Nearest places section when pois is empty', () => {
+    render(<SidePanel property={property} trails={[]} pois={[]} onClose={() => {}} />);
+    expect(screen.queryByText('Nearest places')).not.toBeInTheDocument();
+  });
 });
