@@ -1,0 +1,33 @@
+{
+  "Profile": {
+    "first_name": "Test",
+    "last_name": "User"
+  },
+  "Wishlists": [
+    {
+      "name": "Highlands trips",
+      "listings": [
+        {
+          "listing_id": 12345,
+          "listing_url": "https://www.airbnb.com/rooms/12345"
+        },
+        {
+          "listing_id": 67890,
+          "listing_url": "https://www.airbnb.com/rooms/67890"
+        }
+      ]
+    },
+    {
+      "name": "Coast",
+      "listings": [
+        {
+          "id": "11111",
+          "url": "https://www.airbnb.com/rooms/11111"
+        },
+        {
+          "listing_url": "https://www.airbnb.com/rooms/22222"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "routes": [
+    {
+      "summary": {
+        "distance": 42000,
+        "duration": 2280
+      },
+      "segments": [],
+      "bbox": [-5.1, 56.7, -3.7, 57.2],
+      "way_points": [0, 1]
+    }
+  ],
+  "metadata": {
+    "service": "routing",
+    "engine": { "version": "9.x" }
+  }
+}
