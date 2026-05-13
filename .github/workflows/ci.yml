@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     strategy:
@@ -26,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Format check
+        run: npx prettier --check .
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -34,3 +41,26 @@ jobs:
 
       - name: Unit + integration tests
         run: npm test
+
+      - name: Build
+        run: npm run build
+
+  python-smoke:
+    # Validates that scripts/*.py parse on every supported Python.
+    # pyairbnb itself is not imported; tests stub it. This catches syntax
+    # regressions (e.g. match-statement breakage on Python <3.10) cheaply.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Compile scripts/*.py
+        run: python -m compileall -q scripts
