@@ -1,0 +1,44 @@
+import type { ApiProperty, ApiTrail } from '../api';
+import { nearestTrails } from '../lib/nearestTrails';
+import { TrailDistanceRow } from './TrailDistanceRow';
+
+export interface TrailDistanceListProps {
+  property: ApiProperty;
+  trails: ApiTrail[];
+  limit?: number;
+  onHover?: (trailId: number | null) => void;
+}
+
+export function TrailDistanceList({
+  property,
+  trails,
+  limit = 10,
+  onHover,
+}: TrailDistanceListProps) {
+  const top = nearestTrails(
+    { lat: property.lat, lng: property.lng },
+    trails,
+    limit,
+  );
+
+  if (top.length === 0) {
+    return <p style={{ color: 'var(--graphite)' }}>No trails ingested yet.</p>;
+  }
+
+  return (
+    <>
+      <p className="bpm-section-label">Nearest trails</p>
+      <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {top.map((t, i) => {
+          const props: React.ComponentProps<typeof TrailDistanceRow> = {
+            index: i + 1,
+            trail: t,
+            propertyId: property.id,
+            ...(onHover ? { onHover } : {}),
+          };
+          return <TrailDistanceRow key={t.id} {...props} />;
+        })}
+      </ol>
+    </>
+  );
+}

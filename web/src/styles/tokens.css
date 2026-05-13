@@ -1,0 +1,59 @@
+:root {
+  --font-display: 'Fraunces Variable', 'Fraunces', Georgia, serif;
+  --font-body: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --text-3xl: 2.25rem;
+  --text-2xl: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-base: 1rem;
+  --text-sm: 0.875rem;
+  --text-xs: 0.75rem;
+  --text-xxs: 0.6875rem;
+
+  --ink: #1a2820;
+  --ink-soft: #2f3d33;
+  --graphite: #6b6d63;
+  --vellum: #f4efe5;
+  --vellum-2: #ebe4d4;
+  --paper-rule: rgba(60, 70, 50, 0.12);
+
+  --rust: #c2491d;
+  --coral: #e07856;
+  --slate: #3d5a6c;
+  --brass: #c9a661;
+  --brass-deep: #a88847;
+  --moss: #4f5d3a;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --shadow-paper: 0 1px 0 rgba(40, 30, 10, 0.04), 0 8px 24px -12px rgba(40, 30, 10, 0.18);
+  --shadow-lift: 0 2px 0 rgba(40, 30, 10, 0.06), 0 16px 40px -16px rgba(40, 30, 10, 0.28);
+
+  --ease-paper: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-ink: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 150ms;
+  --dur-med: 300ms;
+  --dur-slow: 600ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
