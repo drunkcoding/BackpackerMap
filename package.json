@@ -19,11 +19,11 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "build": "tsc -p tsconfig.build.json && npm --workspace web run build",
-    "dev": "node --import tsx/esm src/server/server.ts",
+    "dev": "node --env-file-if-exists=.env --import tsx/esm src/server/server.ts",
     "dev:web": "npm --workspace web run dev",
-    "ingest:trails": "node --import tsx/esm src/ingest/cli.ts trails",
-    "ingest:airbnb": "node --import tsx/esm src/ingest/cli.ts airbnb",
-    "ingest:booking": "node --import tsx/esm src/ingest/cli.ts booking",
+    "ingest:trails": "node --env-file-if-exists=.env --import tsx/esm src/ingest/cli.ts trails",
+    "ingest:airbnb": "node --env-file-if-exists=.env --import tsx/esm src/ingest/cli.ts airbnb",
+    "ingest:booking": "node --env-file-if-exists=.env --import tsx/esm src/ingest/cli.ts booking",
     "ingest:all": "npm run ingest:trails && npm run ingest:airbnb && npm run ingest:booking"
   },
   "devDependencies": {
