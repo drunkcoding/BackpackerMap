@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "external_id": "example/cortina-cabin",
+      "provider": "airbnb",
+      "name": "Cortina d'Ampezzo test cabin (example)",
+      "url": "https://example.com/cortina-cabin",
+      "lat": 46.5395,
+      "lng": 12.1352,
+      "price_label": "€110/night",
+      "photo_url": null
+    }
+  ]
+}
