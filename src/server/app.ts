@@ -1,3 +1,5 @@
+import { existsSync, statSync } from 'node:fs';
+import { resolve as resolvePath } from 'node:path';
 import express, { type Express, type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import type { Database } from 'better-sqlite3';
@@ -38,6 +40,7 @@ export interface AppDeps {
   corsOrigin?: string | string[];
   photon?: PhotonClient;
   polygon?: PolygonFetcher;
+  webDistDir?: string;
 }
 
 interface TrailRow {
@@ -276,6 +279,32 @@ export function createApp(deps: AppDeps): Express {
 
   if (deps.photon && deps.polygon) {
     app.use('/api', createGeocodeRouter({ photon: deps.photon, polygon: deps.polygon }));
+  }
+
+  if (deps.webDistDir) {
+    const distDir = resolvePath(deps.webDistDir);
+    if (existsSync(distDir) && statSync(distDir).isDirectory()) {
+      const indexHtml = resolvePath(distDir, 'index.html');
+      app.use(express.static(distDir));
+      app.use((req, res, next) => {
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          next();
+          return;
+        }
+        if (req.path.startsWith('/api/') || req.path === '/healthz') {
+          next();
+          return;
+        }
+        if (!existsSync(indexHtml)) {
+          next();
+          return;
+        }
+        res.sendFile(indexHtml);
+      });
+      console.log(`[server] serving static web from ${distDir}`);
+    } else {
+      console.warn(`[server] webDistDir ${distDir} does not exist — skipping static serve`);
+    }
   }
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

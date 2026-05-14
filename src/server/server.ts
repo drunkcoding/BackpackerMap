@@ -142,6 +142,7 @@ setInterval(() => pruneSearchCache(db, 60 * 60 * 1000), 60 * 60 * 1000).unref();
 
 const photon = createPhotonClient();
 const polygon = createPolygonFetcher();
+const webDistDir = process.env['WEB_DIST_DIR'] ?? resolve(here, '..', '..', 'web', 'dist');
 const app = createApp({
   db,
   ors,
@@ -150,6 +151,7 @@ const app = createApp({
   searchCacheTtlMs: cacheTtlMs,
   photon,
   polygon,
+  webDistDir,
 });
 
 app.listen(port, () => {
