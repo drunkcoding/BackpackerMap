@@ -1,0 +1,37 @@
+FROM node:20-slim AS deps
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 make g++ sqlite3 ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+COPY web/package.json web/package.json
+RUN npm ci --include=dev --ignore-scripts=false
+
+FROM deps AS build
+WORKDIR /app
+COPY . .
+RUN npm run build
+
+FROM node:20-slim AS runtime
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sqlite3 ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/web/node_modules ./web/node_modules
+COPY --from=build /app/web/dist ./web/dist
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/web/package.json ./web/package.json
+COPY --from=build /app/tsconfig.json ./tsconfig.json
+COPY --from=build /app/src ./src
+COPY --from=build /app/scripts ./scripts
+COPY --from=build /app/examples ./examples
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV DB_PATH=/data/backpackermap.sqlite
+ENV WEB_DIST_DIR=/app/web/dist
+VOLUME ["/data"]
+EXPOSE 3000
+
+CMD ["sh", "-c", "mkdir -p /data && npm run ingest:example && exec node --import tsx/esm src/server/server.ts"]

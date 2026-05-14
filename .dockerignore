@@ -1,0 +1,14 @@
+node_modules
+web/node_modules
+dist
+web/dist
+db
+data
+.git
+.github
+.sisyphus
+*.log
+.env
+coverage
+.vscode
+.idea

@@ -1,0 +1,19 @@
+services:
+  backpackermap:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+    image: backpackermap:demo
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    environment:
+      ORS_API_KEY: ${ORS_API_KEY:?ORS_API_KEY is required — see docs/getting-started.md}
+      PORT: "3000"
+      DB_PATH: /data/backpackermap.sqlite
+      WEB_DIST_DIR: /app/web/dist
+    volumes:
+      - backpackermap-db:/data
+    restart: unless-stopped
+
+volumes:
+  backpackermap-db:
