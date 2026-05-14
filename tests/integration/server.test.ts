@@ -181,6 +181,57 @@ describe('HTTP API', () => {
     expect(trailAgain.body.cached).toBe(true);
     expect(orsCalls).toBe(2);
   });
+
+  it('DELETE /api/properties/:id removes a saved property', async () => {
+    const { propertyId } = seed(db);
+    const app = createApp({ db, ors });
+
+    const before = await request(app).get('/api/properties');
+    expect(before.body.map((p: { id: number }) => p.id)).toContain(propertyId);
+
+    const del = await request(app).delete(`/api/properties/${propertyId}`);
+    expect(del.status).toBe(204);
+
+    const after = await request(app).get('/api/properties');
+    expect(after.body.map((p: { id: number }) => p.id)).not.toContain(propertyId);
+  });
+
+  it('DELETE /api/properties/:id returns 404 for an unknown id', async () => {
+    seed(db);
+    const app = createApp({ db, ors });
+    const res = await request(app).delete('/api/properties/99999');
+    expect(res.status).toBe(404);
+  });
+
+  it('DELETE /api/properties/:id returns 400 for a non-integer id', async () => {
+    seed(db);
+    const app = createApp({ db, ors });
+    const res = await request(app).delete('/api/properties/not-a-number');
+    expect(res.status).toBe(400);
+  });
+
+  it('DELETE /api/properties/:id cascades route cache cleanup', async () => {
+    const { propertyId, trailId } = seed(db);
+    const app = createApp({ db, ors });
+
+    await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=trail&targetId=${trailId}`,
+    );
+    const cachedBefore = db
+      .prepare<[number], { c: number }>(
+        'SELECT COUNT(*) AS c FROM route_cache WHERE property_id = ?',
+      )
+      .get(propertyId);
+    expect(cachedBefore!.c).toBe(1);
+
+    await request(app).delete(`/api/properties/${propertyId}`);
+    const cachedAfter = db
+      .prepare<[number], { c: number }>(
+        'SELECT COUNT(*) AS c FROM route_cache WHERE property_id = ?',
+      )
+      .get(propertyId);
+    expect(cachedAfter!.c).toBe(0);
+  });
 });
 
 describe('GET /api/distance — carpark fallback (POI 422 path)', () => {

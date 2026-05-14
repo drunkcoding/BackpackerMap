@@ -377,6 +377,39 @@ body {
   cursor: default;
 }
 
+.bpm-unsave-button {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  color: var(--graphite);
+  border: 1px solid var(--paper-rule);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-block;
+  margin-top: var(--space-3);
+}
+
+.bpm-unsave-button:hover {
+  background: var(--vellum-2);
+  color: var(--ink);
+  border-color: var(--ink-soft);
+}
+
+.bpm-unsave-button.is-confirming {
+  background: #fdf3e3;
+  color: #6b4a1b;
+  border-color: #e6c98a;
+  animation: brassBreathe 1.2s var(--ease-paper) infinite;
+}
+
+.bpm-unsave-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .bpm-extra-action {
   display: block;
   margin-top: var(--space-3);

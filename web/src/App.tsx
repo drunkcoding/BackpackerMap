@@ -15,6 +15,7 @@ import { FilterBar } from './components/FilterBar';
 import { CandidateLayer, filterUnsavedCandidates } from './components/CandidateLayer';
 import { PoiLayer } from './components/PoiLayer';
 import { PromoteButton } from './components/PromoteButton';
+import { UnsaveButton } from './components/UnsaveButton';
 import { LocationSearchBox } from './components/LocationSearchBox';
 import { pointInGeometry } from './lib/pointInPolygon';
 import type { BBox } from './lib/bboxHysteresis';
@@ -94,6 +95,11 @@ export function App() {
     setPromotedCount((n) => n + 1);
     setSelectedCandidateId(null);
     setSelectedPropertyId(propertyId);
+    setPropertiesVersion((v) => v + 1);
+  }
+
+  function handleUnsaved() {
+    setSelectedPropertyId(null);
     setPropertiesVersion((v) => v + 1);
   }
 
@@ -181,6 +187,8 @@ export function App() {
           extraAction={
             selectedCandidate ? (
               <PromoteButton candidateId={selectedCandidate.id} onPromoted={handlePromoted} />
+            ) : selectedProperty ? (
+              <UnsaveButton propertyId={selectedProperty.id} onUnsaved={handleUnsaved} />
             ) : null
           }
         />
