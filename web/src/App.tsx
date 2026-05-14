@@ -47,6 +47,7 @@ export function App() {
     poi: ApiPoi;
     carpark: { lat: number; lng: number };
   } | null>(null);
+  const [hoveredRouteGeometry, setHoveredRouteGeometry] = useState<[number, number][] | null>(null);
   const [discoverEnabled, setDiscoverEnabled] = useState(false);
   const [bbox, setBbox] = useState<BBox | null>(null);
   const [promotedCount, setPromotedCount] = useState(0);
@@ -148,6 +149,7 @@ export function App() {
             selectedPropertyId={selectedPropertyId}
             hoveredTrailId={hoveredTrailId}
             hoveredPoiCarpark={hoveredPoiCarpark}
+            hoveredRouteGeometry={hoveredRouteGeometry}
             onSelectProperty={(id) => {
               setSelectedPropertyId(id);
               if (id !== null) setSelectedCandidateId(null);
@@ -179,10 +181,14 @@ export function App() {
             setSelectedPropertyId(null);
             setSelectedCandidateId(null);
           }}
-          onHoverTrail={setHoveredTrailId}
-          onHoverPoi={(poi, carpark) => {
+          onHoverTrail={(trailId, geometry) => {
+            setHoveredTrailId(trailId);
+            setHoveredRouteGeometry(trailId === null ? null : geometry);
+          }}
+          onHoverPoi={(poi, carpark, geometry) => {
             if (poi && carpark) setHoveredPoiCarpark({ poi, carpark });
             else setHoveredPoiCarpark(null);
+            setHoveredRouteGeometry(poi === null ? null : geometry);
           }}
           extraAction={
             selectedCandidate ? (

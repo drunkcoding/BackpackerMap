@@ -6,9 +6,12 @@ export interface LatLng {
   lng: number;
 }
 
+export type RouteGeometry = [number, number][];
+
 export interface DrivingDistance {
   meters: number;
   seconds: number;
+  geometry: RouteGeometry | null;
 }
 
 export class RateLimitedError extends Error {
@@ -44,9 +47,10 @@ export interface OrsClientOptions {
   retryDelayMs?: (attempt: number) => number;
 }
 
-interface OrsRouteResponse {
-  routes?: Array<{
-    summary?: { distance?: number; duration?: number };
+interface OrsGeoJsonResponse {
+  features?: Array<{
+    properties?: { summary?: { distance?: number; duration?: number } };
+    geometry?: { type?: string; coordinates?: unknown };
   }>;
 }
 
@@ -54,7 +58,8 @@ export function createOrsClient(options: OrsClientOptions): {
   getDrivingDistance(from: LatLng, to: LatLng): Promise<DrivingDistance>;
 } {
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
-  const endpoint = options.endpoint ?? 'https://api.openrouteservice.org/v2/directions/driving-car';
+  const endpoint =
+    options.endpoint ?? 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
   const maxRetries = options.maxRetries ?? 3;
   const retryDelayMs = options.retryDelayMs ?? ((n) => 100 * 2 ** n);
 
@@ -66,13 +71,14 @@ export function createOrsClient(options: OrsClientOptions): {
         headers: {
           Authorization: options.apiKey,
           'Content-Type': 'application/json',
-          Accept: 'application/json',
+          Accept: 'application/json, application/geo+json',
         },
         body: JSON.stringify({
           coordinates: [
             [from.lng, from.lat],
             [to.lng, to.lat],
           ],
+          geometry_simplify: true,
         }),
       });
 
@@ -105,25 +111,46 @@ export function createOrsClient(options: OrsClientOptions): {
         throw new OrsRequestError(`ORS ${res.status}`, res.status, body);
       }
 
-      const json = (await res.json()) as OrsRouteResponse;
-      const summary = json.routes?.[0]?.summary;
+      const json = (await res.json()) as OrsGeoJsonResponse;
+      const feature = json.features?.[0];
+      const summary = feature?.properties?.summary;
       if (
         !summary ||
         typeof summary.distance !== 'number' ||
         typeof summary.duration !== 'number'
       ) {
         throw new OrsRequestError(
-          'ORS response missing routes[0].summary',
+          'ORS response missing features[0].properties.summary',
           res.status,
           JSON.stringify(json).slice(0, 200),
         );
       }
-      return { meters: summary.distance, seconds: summary.duration };
+      return {
+        meters: summary.distance,
+        seconds: summary.duration,
+        geometry: extractGeometry(feature.geometry),
+      };
     }
     throw lastErr ?? new OrsRequestError('ORS exhausted retries', 0, '');
   }
 
   return { getDrivingDistance: call };
+}
+
+function extractGeometry(geometry: unknown): RouteGeometry | null {
+  if (!geometry || typeof geometry !== 'object') return null;
+  const g = geometry as { type?: unknown; coordinates?: unknown };
+  if (g.type !== 'LineString' || !Array.isArray(g.coordinates)) return null;
+  const out: RouteGeometry = [];
+  for (const c of g.coordinates) {
+    if (!Array.isArray(c) || c.length < 2) continue;
+    const lng = c[0];
+    const lat = c[1];
+    if (typeof lng !== 'number' || typeof lat !== 'number') continue;
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+    out.push([lng, lat]);
+  }
+  return out.length > 0 ? out : null;
 }
 
 export interface CachedDistanceDeps {
@@ -140,6 +167,7 @@ export interface DrivingDistanceResult {
   seconds: number;
   cached: boolean;
   viaCarpark: { lat: number; lng: number } | null;
+  geometry: RouteGeometry | null;
 }
 
 export async function getCachedDrivingDistance(
@@ -160,6 +188,7 @@ export async function getCachedDrivingDistance(
       seconds: existing.seconds,
       cached: true,
       viaCarpark,
+      geometry: parseStoredGeometry(existing.geometry),
     };
   }
   const coords = deps.getCoords(propertyId, targetKind, targetId);
@@ -167,6 +196,32 @@ export async function getCachedDrivingDistance(
     throw new Error(`unknown property/${targetKind} pair: ${propertyId}/${targetId}`);
   }
   const fresh = await deps.client.getDrivingDistance(coords.from, coords.to);
-  setRoute(db, propertyId, targetKind, targetId, fresh.meters, fresh.seconds);
-  return { meters: fresh.meters, seconds: fresh.seconds, cached: false, viaCarpark: null };
+  const serialized = fresh.geometry ? JSON.stringify(fresh.geometry) : null;
+  setRoute(db, propertyId, targetKind, targetId, fresh.meters, fresh.seconds, null, serialized);
+  return {
+    meters: fresh.meters,
+    seconds: fresh.seconds,
+    cached: false,
+    viaCarpark: null,
+    geometry: fresh.geometry,
+  };
+}
+
+function parseStoredGeometry(serialized: string | null): RouteGeometry | null {
+  if (serialized === null) return null;
+  try {
+    const parsed = JSON.parse(serialized) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    const out: RouteGeometry = [];
+    for (const c of parsed) {
+      if (!Array.isArray(c) || c.length < 2) continue;
+      const lng = c[0];
+      const lat = c[1];
+      if (typeof lng !== 'number' || typeof lat !== 'number') continue;
+      out.push([lng, lat]);
+    }
+    return out.length > 0 ? out : null;
+  } catch {
+    return null;
+  }
 }

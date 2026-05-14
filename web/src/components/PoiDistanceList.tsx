@@ -7,7 +7,11 @@ export interface PoiDistanceListProps {
   pois: ApiPoi[];
   limit?: number;
   showHeading?: boolean;
-  onHoverPoi?: (poi: ApiPoi | null, viaCarpark: { lat: number; lng: number } | null) => void;
+  onHoverPoi?: (
+    poi: ApiPoi | null,
+    viaCarpark: { lat: number; lng: number } | null,
+    geometry: [number, number][] | null,
+  ) => void;
 }
 
 export function PoiDistanceList({

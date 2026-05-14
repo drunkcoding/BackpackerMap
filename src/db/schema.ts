@@ -10,6 +10,7 @@ const MIGRATIONS = [
   '0002_candidate.sql',
   '0003_pois.sql',
   '0004_poi_carpark.sql',
+  '0005_route_geometry.sql',
 ];
 
 export function migrate(db: Database): void {

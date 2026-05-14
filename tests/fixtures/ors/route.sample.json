@@ -1,13 +1,21 @@
 {
-  "routes": [
+  "type": "FeatureCollection",
+  "features": [
     {
-      "summary": {
-        "distance": 42000,
-        "duration": 2280
+      "type": "Feature",
+      "properties": {
+        "summary": { "distance": 42000, "duration": 2280 },
+        "way_points": [0, 1]
       },
-      "segments": [],
-      "bbox": [-5.1, 56.7, -3.7, 57.2],
-      "way_points": [0, 1]
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-5.0035, 56.7867],
+          [-4.5, 56.9],
+          [-3.7, 57.0]
+        ]
+      },
+      "bbox": [-5.1, 56.7, -3.7, 57.2]
     }
   ],
   "metadata": {

@@ -7,17 +7,18 @@ export interface TrailDistanceRowProps {
   index: number;
   trail: ApiTrail;
   propertyId: number;
-  onHover?: (trailId: number | null) => void;
+  onHover?: (trailId: number | null, geometry: [number, number][] | null) => void;
 }
 
 export function TrailDistanceRow({ index, trail, propertyId, onHover }: TrailDistanceRowProps) {
   const distance = useDistance(propertyId, 'trail', trail.id);
+  const geometry = distance.status === 'success' ? (distance.data.geometry ?? null) : null;
 
   return (
     <li
       className="bpm-trail-row"
-      onMouseEnter={() => onHover?.(trail.id)}
-      onMouseLeave={() => onHover?.(null)}
+      onMouseEnter={() => onHover?.(trail.id, geometry)}
+      onMouseLeave={() => onHover?.(null, null)}
       data-testid={`trail-row-${trail.id}`}
     >
       <span className="bpm-trail-index">{String(index).padStart(2, '0')}</span>

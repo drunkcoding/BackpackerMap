@@ -38,7 +38,13 @@ describe('ORS client', () => {
       retryDelayMs: () => 0,
     });
     const result = await client.getDrivingDistance(PROP_COORDS, TRAIL_COORDS);
-    expect(result).toEqual({ meters: 42000, seconds: 2280 });
+    expect(result.meters).toBe(42000);
+    expect(result.seconds).toBe(2280);
+    expect(result.geometry).toEqual([
+      [-5.0035, 56.7867],
+      [-4.5, 56.9],
+      [-3.7, 57.0],
+    ]);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
@@ -86,37 +92,62 @@ describe('getCachedDrivingDistance', () => {
   afterEach(() => db.close());
 
   const coordsLookup = () => ({ from: PROP_COORDS, to: TRAIL_COORDS });
+  const sampleGeometry: [number, number][] = [
+    [-5.0035, 56.7867],
+    [-3.7, 57.0],
+  ];
 
-  it('miss -> fetch + store; second call -> cached hit, no fetch', async () => {
-    const client = { getDrivingDistance: vi.fn(async () => ({ meters: 42000, seconds: 2280 })) };
+  it('miss -> fetch + store; second call -> cached hit with same geometry, no fetch', async () => {
+    const client = {
+      getDrivingDistance: vi.fn(async () => ({
+        meters: 42000,
+        seconds: 2280,
+        geometry: sampleGeometry,
+      })),
+    };
     const first = await getCachedDrivingDistance(db, 1, 'trail', 1, {
       client,
       getCoords: coordsLookup,
     });
-    expect(first).toEqual({ meters: 42000, seconds: 2280, cached: false, viaCarpark: null });
+    expect(first).toEqual({
+      meters: 42000,
+      seconds: 2280,
+      cached: false,
+      viaCarpark: null,
+      geometry: sampleGeometry,
+    });
     expect(client.getDrivingDistance).toHaveBeenCalledTimes(1);
 
     const second = await getCachedDrivingDistance(db, 1, 'trail', 1, {
       client,
       getCoords: coordsLookup,
     });
-    expect(second).toEqual({ meters: 42000, seconds: 2280, cached: true, viaCarpark: null });
+    expect(second).toEqual({
+      meters: 42000,
+      seconds: 2280,
+      cached: true,
+      viaCarpark: null,
+      geometry: sampleGeometry,
+    });
     expect(client.getDrivingDistance).toHaveBeenCalledTimes(1);
   });
 
-  it('aged cache entries are still returned (no TTL in v1)', async () => {
+  it('cached row without geometry returns null geometry (pre-migration row)', async () => {
     db.prepare(
       `INSERT INTO route_cache (property_id, target_kind, target_id, meters, seconds, computed_at)
        VALUES (?, ?, ?, ?, ?, datetime('now', '-30 day'))`,
     ).run(1, 'trail', 1, 100, 60);
 
-    const client = { getDrivingDistance: vi.fn(async () => ({ meters: 0, seconds: 0 })) };
+    const client = {
+      getDrivingDistance: vi.fn(async () => ({ meters: 0, seconds: 0, geometry: null })),
+    };
     const result = await getCachedDrivingDistance(db, 1, 'trail', 1, {
       client,
       getCoords: coordsLookup,
     });
     expect(result.meters).toBe(100);
     expect(result.cached).toBe(true);
+    expect(result.geometry).toBeNull();
     expect(client.getDrivingDistance).not.toHaveBeenCalled();
   });
 });

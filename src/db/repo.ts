@@ -51,6 +51,7 @@ export interface RouteEntry {
   computedAt: string;
   viaCarparkLat: number | null;
   viaCarparkLng: number | null;
+  geometry: string | null;
 }
 
 export function openDb(path: string): DatabaseType {
@@ -208,6 +209,7 @@ interface RouteRow {
   computed_at: string;
   via_carpark_lat: number | null;
   via_carpark_lng: number | null;
+  geometry: string | null;
 }
 
 export function getRoute(
@@ -231,6 +233,7 @@ export function getRoute(
     computedAt: row.computed_at,
     viaCarparkLat: row.via_carpark_lat,
     viaCarparkLng: row.via_carpark_lng,
+    geometry: row.geometry,
   };
 }
 
@@ -242,16 +245,18 @@ export function setRoute(
   meters: number,
   seconds: number,
   viaCarpark: { lat: number; lng: number } | null = null,
+  geometry: string | null = null,
 ): void {
   db.prepare(
     `INSERT INTO route_cache
-       (property_id, target_kind, target_id, meters, seconds, via_carpark_lat, via_carpark_lng)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+       (property_id, target_kind, target_id, meters, seconds, via_carpark_lat, via_carpark_lng, geometry)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (property_id, target_kind, target_id) DO UPDATE SET
        meters = excluded.meters,
        seconds = excluded.seconds,
        via_carpark_lat = excluded.via_carpark_lat,
        via_carpark_lng = excluded.via_carpark_lng,
+       geometry = excluded.geometry,
        computed_at = datetime('now')`,
   ).run(
     propertyId,
@@ -261,6 +266,7 @@ export function setRoute(
     seconds,
     viaCarpark?.lat ?? null,
     viaCarpark?.lng ?? null,
+    geometry,
   );
 }
 

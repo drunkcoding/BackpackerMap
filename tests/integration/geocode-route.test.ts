@@ -9,7 +9,7 @@ function makeApp(opts: { photon: PhotonClient; polygon: PolygonFetcher }) {
   const db = openDb(':memory:');
   return createApp({
     db,
-    ors: { getDrivingDistance: async () => ({ meters: 0, seconds: 0 }) },
+    ors: { getDrivingDistance: async () => ({ meters: 0, seconds: 0, geometry: null }) },
     photon: opts.photon,
     polygon: opts.polygon,
   });

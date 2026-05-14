@@ -6,7 +6,7 @@ export interface TrailDistanceListProps {
   property: ApiProperty;
   trails: ApiTrail[];
   limit?: number;
-  onHover?: (trailId: number | null) => void;
+  onHover?: (trailId: number | null, geometry: [number, number][] | null) => void;
 }
 
 export function TrailDistanceList({

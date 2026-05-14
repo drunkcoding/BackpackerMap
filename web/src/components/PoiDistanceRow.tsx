@@ -7,20 +7,25 @@ export interface PoiDistanceRowProps {
   index: number;
   poi: ApiPoi;
   propertyId: number;
-  onHover?: (poi: ApiPoi | null, viaCarpark: { lat: number; lng: number } | null) => void;
+  onHover?: (
+    poi: ApiPoi | null,
+    viaCarpark: { lat: number; lng: number } | null,
+    geometry: [number, number][] | null,
+  ) => void;
 }
 
 export function PoiDistanceRow({ index, poi, propertyId, onHover }: PoiDistanceRowProps) {
   const distance = useDistance(propertyId, 'poi', poi.id);
   const viaCarpark =
     distance.status === 'success' && distance.data.viaCarpark ? distance.data.viaCarpark : null;
+  const geometry = distance.status === 'success' ? (distance.data.geometry ?? null) : null;
 
   return (
     <li
       className="bpm-trail-row"
       data-testid={`poi-row-${poi.id}`}
-      onMouseEnter={() => onHover?.(poi, viaCarpark)}
-      onMouseLeave={() => onHover?.(null, null)}
+      onMouseEnter={() => onHover?.(poi, viaCarpark, geometry)}
+      onMouseLeave={() => onHover?.(null, null, null)}
     >
       <span className="bpm-trail-index">{String(index).padStart(2, '0')}</span>
       <div>

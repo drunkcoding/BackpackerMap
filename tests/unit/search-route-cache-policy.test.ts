@@ -51,7 +51,7 @@ function makeApp(
   };
   return createApp({
     db,
-    ors: { getDrivingDistance: async () => ({ meters: 0, seconds: 0 }) },
+    ors: { getDrivingDistance: async () => ({ meters: 0, seconds: 0, geometry: null }) },
     searchDispatcher: dispatcher,
     searchCacheTtlMs: 60_000,
   });

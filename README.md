@@ -2,7 +2,7 @@
 
 A self-hosted, single-user webapp that combines your saved AllTrails trails, Airbnb properties, and Booking.com properties on one map — with driving distance and time from each property to each trailhead.
 
-Map renders in a deliberate "Expedition Field Journal" aesthetic: warm vellum background, OSM tiles softened with a journal filter, rust trail polylines, coral/slate property markers, brass dashed connection lines when you hover a trail row in the side panel.
+Map renders in a deliberate "Expedition Field Journal" aesthetic: warm vellum background, OSM tiles softened with a journal filter, rust trail polylines, coral/slate property markers, and brass route lines tracing the actual driving path when you hover a trail or POI row in the side panel.
 
 ## Quickstart
 
@@ -206,7 +206,7 @@ npm run dev                       # Express API on :3000
 npm --workspace web run dev       # Vite dev server on :5173
 ```
 
-Open <http://localhost:5173>. Click a property pin → side panel slides in → nearest trails populate with driving distance and time (calls cached after first load).
+Open <http://localhost:5173>. Click a property pin → side panel slides in → nearest trails populate with driving distance and time (calls cached after first load). Hover any trail or POI row to draw the actual road-snapped driving route on the map (also cached — first hover hits OpenRouteService, subsequent hovers redraw from SQLite).
 
 ### 6. Discover mode (no login required)
 
@@ -285,7 +285,8 @@ What does NOT run in CI:
 
 ```
 src/                       backend (TypeScript)
-  db/                      schema + repo + migrations (0001 init, 0002 candidate, 0003 pois)
+  db/                      schema + repo + migrations (0001 init, 0002 candidate, 0003 pois,
+                           0004 poi_carpark, 0005 route_geometry)
   ingest/                  gpx, airbnb, booking, google-list, geocode (Nominatim), stealth, CLI
   routing/                 OpenRouteService client + route cache (trails + pois)
   search/                  v2 Discover mode

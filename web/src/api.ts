@@ -34,6 +34,7 @@ export interface ApiDistance {
   seconds: number;
   cached: boolean;
   viaCarpark?: { lat: number; lng: number } | null;
+  geometry?: [number, number][] | null;
 }
 
 export type ApiTargetKind = 'trail' | 'poi';

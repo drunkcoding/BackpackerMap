@@ -12,8 +12,12 @@ export interface SidePanelProps {
   isCollectionVisible?: (collection: string) => boolean;
   onToggleCollection?: (collection: string) => void;
   onClose: () => void;
-  onHoverTrail?: (trailId: number | null) => void;
-  onHoverPoi?: (poi: ApiPoi | null, viaCarpark: { lat: number; lng: number } | null) => void;
+  onHoverTrail?: (trailId: number | null, geometry: [number, number][] | null) => void;
+  onHoverPoi?: (
+    poi: ApiPoi | null,
+    viaCarpark: { lat: number; lng: number } | null,
+    geometry: [number, number][] | null,
+  ) => void;
   extraAction?: ReactNode;
 }
 

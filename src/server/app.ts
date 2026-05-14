@@ -27,7 +27,10 @@ import type { PolygonFetcher } from './geocode/polygon.ts';
 export interface AppDeps {
   db: Database;
   ors: {
-    getDrivingDistance(from: LatLng, to: LatLng): Promise<{ meters: number; seconds: number }>;
+    getDrivingDistance(
+      from: LatLng,
+      to: LatLng,
+    ): Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>;
   };
   overpass?: OverpassClient;
   searchDispatcher?: SearchDispatcher;
@@ -283,28 +286,29 @@ export function createApp(deps: AppDeps): Express {
   return app;
 }
 
+type RouteGeometry = [number, number][];
+
 interface DistanceResult {
   meters: number;
   seconds: number;
   cached: boolean;
   viaCarpark: { lat: number; lng: number } | null;
+  geometry: RouteGeometry | null;
 }
 
-function serializeDistance(r: DistanceResult): {
+interface SerializedDistance {
   meters: number;
   seconds: number;
   cached: boolean;
   viaCarpark?: { lat: number; lng: number };
-} {
-  if (r.viaCarpark === null) {
-    return { meters: r.meters, seconds: r.seconds, cached: r.cached };
-  }
-  return {
-    meters: r.meters,
-    seconds: r.seconds,
-    cached: r.cached,
-    viaCarpark: r.viaCarpark,
-  };
+  geometry?: RouteGeometry;
+}
+
+function serializeDistance(r: DistanceResult): SerializedDistance {
+  const out: SerializedDistance = { meters: r.meters, seconds: r.seconds, cached: r.cached };
+  if (r.viaCarpark !== null) out.viaCarpark = r.viaCarpark;
+  if (r.geometry !== null) out.geometry = r.geometry;
+  return out;
 }
 
 interface DistanceFallbackResult {
@@ -312,12 +316,16 @@ interface DistanceFallbackResult {
   seconds: number;
   cached: boolean;
   viaCarpark: { lat: number; lng: number };
+  geometry: RouteGeometry | null;
 }
 
 async function tryCarparkFallback(
   db: Database,
   ors: {
-    getDrivingDistance(from: LatLng, to: LatLng): Promise<{ meters: number; seconds: number }>;
+    getDrivingDistance(
+      from: LatLng,
+      to: LatLng,
+    ): Promise<{ meters: number; seconds: number; geometry: RouteGeometry | null }>;
   },
   overpass: OverpassClient,
   propertyId: number,
@@ -358,8 +366,15 @@ async function tryCarparkFallback(
       { lat: pRow.lat, lng: pRow.lng },
       { lat: carpark.lat, lng: carpark.lng },
     );
-    setRoute(db, propertyId, 'poi', poiId, fresh.meters, fresh.seconds, carpark);
-    return { meters: fresh.meters, seconds: fresh.seconds, cached: false, viaCarpark: carpark };
+    const serialized = fresh.geometry ? JSON.stringify(fresh.geometry) : null;
+    setRoute(db, propertyId, 'poi', poiId, fresh.meters, fresh.seconds, carpark, serialized);
+    return {
+      meters: fresh.meters,
+      seconds: fresh.seconds,
+      cached: false,
+      viaCarpark: carpark,
+      geometry: fresh.geometry,
+    };
   } catch (err) {
     if (err instanceof NoRoutableRouteError) return null;
     throw err;

@@ -47,6 +47,7 @@ export interface MapViewProps {
   selectedPropertyId: number | null;
   hoveredTrailId: number | null;
   hoveredPoiCarpark?: { poi: ApiPoi; carpark: { lat: number; lng: number } } | null;
+  hoveredRouteGeometry?: [number, number][] | null;
   onSelectProperty: (id: number | null) => void;
   onBoundsChange?: (bbox: BBox) => void;
   flyToBbox?: BBox | null;
@@ -103,6 +104,7 @@ export function MapView({
   selectedPropertyId,
   hoveredTrailId,
   hoveredPoiCarpark,
+  hoveredRouteGeometry,
   onSelectProperty,
   onBoundsChange,
   flyToBbox,
@@ -199,7 +201,7 @@ export function MapView({
         />
       ))}
 
-      {selected && hoveredTrail && (
+      {selected && hoveredTrail && !hoveredRouteGeometry && (
         <Polyline
           positions={[
             [selected.lat, selected.lng],
@@ -211,6 +213,18 @@ export function MapView({
             dashArray: '4 6',
             opacity: 0.9,
             className: 'bpm-connection-line',
+          }}
+        />
+      )}
+
+      {hoveredRouteGeometry && (
+        <Polyline
+          positions={hoveredRouteGeometry.map(([lng, lat]) => [lat, lng])}
+          pathOptions={{
+            color: '#A88847',
+            weight: 3,
+            opacity: 0.95,
+            className: 'bpm-route-line',
           }}
         />
       )}
