@@ -1,7 +1,14 @@
 import express, { type Express, type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import type { Database } from 'better-sqlite3';
-import { listProperties, listPois } from '../db/repo.ts';
+import {
+  deleteProperty,
+  listProperties,
+  listPois,
+  getPoiCarpark,
+  setPoiCarpark,
+  setRoute,
+} from '../db/repo.ts';
 import {
   getCachedDrivingDistance,
   type LatLng,
@@ -9,6 +16,8 @@ import {
   OrsRequestError,
   NoRoutableRouteError,
 } from '../routing/ors.ts';
+import type { OverpassClient } from '../routing/overpass.ts';
+import { RADII_METERS } from '../routing/overpass.ts';
 import { createSearchRouter } from './routes/search.ts';
 import { createGeocodeRouter } from './routes/geocode.ts';
 import type { SearchDispatcher } from '../search/dispatcher.ts';
@@ -20,6 +29,7 @@ export interface AppDeps {
   ors: {
     getDrivingDistance(from: LatLng, to: LatLng): Promise<{ meters: number; seconds: number }>;
   };
+  overpass?: OverpassClient;
   searchDispatcher?: SearchDispatcher;
   searchCacheTtlMs?: number;
   corsOrigin?: string | string[];
@@ -65,6 +75,23 @@ export function createApp(deps: AppDeps): Express {
         photoUrl: p.photoUrl,
       }));
     res.json(props);
+  });
+
+  app.delete('/api/properties/:id', (req, res) => {
+    const id = Number(req.params['id']);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: 'invalid property id' });
+      return;
+    }
+    const exists = deps.db
+      .prepare<[number], { id: number }>('SELECT id FROM property WHERE id = ?')
+      .get(id);
+    if (!exists) {
+      res.status(404).json({ error: 'property not found' });
+      return;
+    }
+    deleteProperty(deps.db, id);
+    res.status(204).end();
   });
 
   app.get('/api/trails', (_req, res) => {
@@ -187,13 +214,37 @@ export function createApp(deps: AppDeps): Express {
           };
         },
       });
-      res.json(result);
+      res.json(serializeDistance(result));
     } catch (err) {
       if (err instanceof RateLimitedError) {
         res.status(429).json({ error: err.message });
         return;
       }
       if (err instanceof NoRoutableRouteError) {
+        if (targetKind === 'poi' && deps.overpass) {
+          try {
+            const viaResult = await tryCarparkFallback(
+              deps.db,
+              deps.ors,
+              deps.overpass,
+              propertyId,
+              targetId,
+            );
+            if (viaResult) {
+              res.json(serializeDistance(viaResult));
+              return;
+            }
+          } catch (innerErr) {
+            if (innerErr instanceof RateLimitedError) {
+              res.status(429).json({ error: innerErr.message });
+              return;
+            }
+            if (innerErr instanceof OrsRequestError) {
+              res.status(502).json({ error: innerErr.message });
+              return;
+            }
+          }
+        }
         res.status(422).json({ error: 'no driving route', detail: err.detail });
         return;
       }
@@ -230,4 +281,87 @@ export function createApp(deps: AppDeps): Express {
   });
 
   return app;
+}
+
+interface DistanceResult {
+  meters: number;
+  seconds: number;
+  cached: boolean;
+  viaCarpark: { lat: number; lng: number } | null;
+}
+
+function serializeDistance(r: DistanceResult): {
+  meters: number;
+  seconds: number;
+  cached: boolean;
+  viaCarpark?: { lat: number; lng: number };
+} {
+  if (r.viaCarpark === null) {
+    return { meters: r.meters, seconds: r.seconds, cached: r.cached };
+  }
+  return {
+    meters: r.meters,
+    seconds: r.seconds,
+    cached: r.cached,
+    viaCarpark: r.viaCarpark,
+  };
+}
+
+interface DistanceFallbackResult {
+  meters: number;
+  seconds: number;
+  cached: boolean;
+  viaCarpark: { lat: number; lng: number };
+}
+
+async function tryCarparkFallback(
+  db: Database,
+  ors: {
+    getDrivingDistance(from: LatLng, to: LatLng): Promise<{ meters: number; seconds: number }>;
+  },
+  overpass: OverpassClient,
+  propertyId: number,
+  poiId: number,
+): Promise<DistanceFallbackResult | null> {
+  const pRow = db
+    .prepare<
+      [number],
+      { lat: number | null; lng: number | null }
+    >('SELECT lat, lng FROM property WHERE id = ?')
+    .get(propertyId);
+  if (!pRow || pRow.lat === null || pRow.lng === null) return null;
+  const poiRow = db
+    .prepare<[number], { lat: number; lng: number }>('SELECT lat, lng FROM poi WHERE id = ?')
+    .get(poiId);
+  if (!poiRow) return null;
+
+  const cached = getPoiCarpark(db, poiId);
+  let carpark: { lat: number; lng: number } | null;
+  if (cached) {
+    if (cached.lat === null || cached.lng === null) return null;
+    carpark = { lat: cached.lat, lng: cached.lng };
+  } else {
+    const found = await overpass.findNearestCarpark(
+      { lat: poiRow.lat, lng: poiRow.lng },
+      RADII_METERS,
+    );
+    if (!found) {
+      setPoiCarpark(db, poiId, null, null, RADII_METERS[RADII_METERS.length - 1] ?? 0);
+      return null;
+    }
+    setPoiCarpark(db, poiId, found.point.lat, found.point.lng, found.radiusMeters);
+    carpark = found.point;
+  }
+
+  try {
+    const fresh = await ors.getDrivingDistance(
+      { lat: pRow.lat, lng: pRow.lng },
+      { lat: carpark.lat, lng: carpark.lng },
+    );
+    setRoute(db, propertyId, 'poi', poiId, fresh.meters, fresh.seconds, carpark);
+    return { meters: fresh.meters, seconds: fresh.seconds, cached: false, viaCarpark: carpark };
+  } catch (err) {
+    if (err instanceof NoRoutableRouteError) return null;
+    throw err;
+  }
 }

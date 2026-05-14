@@ -7,6 +7,7 @@ export interface PoiDistanceListProps {
   pois: ApiPoi[];
   limit?: number;
   showHeading?: boolean;
+  onHoverPoi?: (poi: ApiPoi | null, viaCarpark: { lat: number; lng: number } | null) => void;
 }
 
 export function PoiDistanceList({
@@ -14,6 +15,7 @@ export function PoiDistanceList({
   pois,
   limit = 10,
   showHeading = true,
+  onHoverPoi,
 }: PoiDistanceListProps) {
   const top = nearestPois({ lat: property.lat, lng: property.lng }, pois, limit);
 
@@ -30,7 +32,13 @@ export function PoiDistanceList({
       {showHeading && <p className="bpm-section-label">Nearest places</p>}
       <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {top.map((p, i) => (
-          <PoiDistanceRow key={p.id} index={i + 1} poi={p} propertyId={property.id} />
+          <PoiDistanceRow
+            key={p.id}
+            index={i + 1}
+            poi={p}
+            propertyId={property.id}
+            {...(onHoverPoi ? { onHover: onHoverPoi } : {})}
+          />
         ))}
       </ol>
     </>

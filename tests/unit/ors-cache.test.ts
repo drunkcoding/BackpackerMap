@@ -93,14 +93,14 @@ describe('getCachedDrivingDistance', () => {
       client,
       getCoords: coordsLookup,
     });
-    expect(first).toEqual({ meters: 42000, seconds: 2280, cached: false });
+    expect(first).toEqual({ meters: 42000, seconds: 2280, cached: false, viaCarpark: null });
     expect(client.getDrivingDistance).toHaveBeenCalledTimes(1);
 
     const second = await getCachedDrivingDistance(db, 1, 'trail', 1, {
       client,
       getCoords: coordsLookup,
     });
-    expect(second).toEqual({ meters: 42000, seconds: 2280, cached: true });
+    expect(second).toEqual({ meters: 42000, seconds: 2280, cached: true, viaCarpark: null });
     expect(client.getDrivingDistance).toHaveBeenCalledTimes(1);
   });
 

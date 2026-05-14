@@ -49,6 +49,8 @@ export interface RouteEntry {
   meters: number;
   seconds: number;
   computedAt: string;
+  viaCarparkLat: number | null;
+  viaCarparkLng: number | null;
 }
 
 export function openDb(path: string): DatabaseType {
@@ -204,6 +206,8 @@ interface RouteRow {
   meters: number;
   seconds: number;
   computed_at: string;
+  via_carpark_lat: number | null;
+  via_carpark_lng: number | null;
 }
 
 export function getRoute(
@@ -225,6 +229,8 @@ export function getRoute(
     meters: row.meters,
     seconds: row.seconds,
     computedAt: row.computed_at,
+    viaCarparkLat: row.via_carpark_lat,
+    viaCarparkLng: row.via_carpark_lng,
   };
 }
 
@@ -235,15 +241,27 @@ export function setRoute(
   targetId: number,
   meters: number,
   seconds: number,
+  viaCarpark: { lat: number; lng: number } | null = null,
 ): void {
   db.prepare(
-    `INSERT INTO route_cache (property_id, target_kind, target_id, meters, seconds)
-     VALUES (?, ?, ?, ?, ?)
+    `INSERT INTO route_cache
+       (property_id, target_kind, target_id, meters, seconds, via_carpark_lat, via_carpark_lng)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (property_id, target_kind, target_id) DO UPDATE SET
        meters = excluded.meters,
        seconds = excluded.seconds,
+       via_carpark_lat = excluded.via_carpark_lat,
+       via_carpark_lng = excluded.via_carpark_lng,
        computed_at = datetime('now')`,
-  ).run(propertyId, targetKind, targetId, meters, seconds);
+  ).run(
+    propertyId,
+    targetKind,
+    targetId,
+    meters,
+    seconds,
+    viaCarpark?.lat ?? null,
+    viaCarpark?.lng ?? null,
+  );
 }
 
 export interface PoiInput {
@@ -570,6 +588,54 @@ export function putCachedSearch(
        candidate_ids = excluded.candidate_ids,
        fetched_at = datetime('now')`,
   ).run(cacheKey, queryJson, provider, JSON.stringify(candidateIds));
+}
+
+export interface PoiCarparkEntry {
+  poiId: number;
+  lat: number | null;
+  lng: number | null;
+  radiusMeters: number;
+  fetchedAt: string;
+}
+
+interface PoiCarparkRow {
+  poi_id: number;
+  lat: number | null;
+  lng: number | null;
+  radius_m: number;
+  fetched_at: string;
+}
+
+export function getPoiCarpark(db: DatabaseType, poiId: number): PoiCarparkEntry | null {
+  const row = db
+    .prepare<[number], PoiCarparkRow>('SELECT * FROM poi_carpark WHERE poi_id = ?')
+    .get(poiId);
+  if (!row) return null;
+  return {
+    poiId: row.poi_id,
+    lat: row.lat,
+    lng: row.lng,
+    radiusMeters: row.radius_m,
+    fetchedAt: row.fetched_at,
+  };
+}
+
+export function setPoiCarpark(
+  db: DatabaseType,
+  poiId: number,
+  lat: number | null,
+  lng: number | null,
+  radiusMeters: number,
+): void {
+  db.prepare(
+    `INSERT INTO poi_carpark (poi_id, lat, lng, radius_m)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT (poi_id) DO UPDATE SET
+       lat = excluded.lat,
+       lng = excluded.lng,
+       radius_m = excluded.radius_m,
+       fetched_at = datetime('now')`,
+  ).run(poiId, lat, lng, radiusMeters);
 }
 
 export function pruneSearchCache(db: DatabaseType, maxAgeMs: number): number {

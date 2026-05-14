@@ -33,6 +33,7 @@ export interface ApiDistance {
   meters: number;
   seconds: number;
   cached: boolean;
+  viaCarpark?: { lat: number; lng: number } | null;
 }
 
 export type ApiTargetKind = 'trail' | 'poi';
@@ -125,6 +126,13 @@ export const api = {
     fetch(`/api/candidates/${id}/promote`, { method: 'POST' }).then(async (res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return (await res.json()) as { property: ApiProperty };
+    }),
+  deleteProperty: (id: number) =>
+    fetch(`/api/properties/${id}`, { method: 'DELETE' }).then(async (res) => {
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`HTTP ${res.status}: ${body || res.statusText}`);
+      }
     }),
   geocode: (q: string, signal?: AbortSignal) =>
     getJson<{ results: ApiGeocodeResult[] }>(

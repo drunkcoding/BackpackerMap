@@ -11,7 +11,7 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { ApiProperty, ApiTrail, ApiTrailDetail } from '../api';
+import type { ApiPoi, ApiProperty, ApiTrail, ApiTrailDetail } from '../api';
 import { api } from '../api';
 import { HouseAirbnb } from '../icons/HouseAirbnb';
 import { HouseBooking } from '../icons/HouseBooking';
@@ -46,11 +46,21 @@ export interface MapViewProps {
   properties: ApiProperty[];
   selectedPropertyId: number | null;
   hoveredTrailId: number | null;
+  hoveredPoiCarpark?: { poi: ApiPoi; carpark: { lat: number; lng: number } } | null;
   onSelectProperty: (id: number | null) => void;
   onBoundsChange?: (bbox: BBox) => void;
   flyToBbox?: BBox | null;
   regionPolygon?: GeoJsonGeometry | null;
   children?: ReactNode;
+}
+
+function carparkIcon(): L.DivIcon {
+  return L.divIcon({
+    html: '<div class="bpm-carpark-marker">P</div>',
+    className: '',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
 }
 
 function FlyToBbox({ bbox }: { bbox: BBox | null | undefined }) {
@@ -92,6 +102,7 @@ export function MapView({
   properties,
   selectedPropertyId,
   hoveredTrailId,
+  hoveredPoiCarpark,
   onSelectProperty,
   onBoundsChange,
   flyToBbox,
@@ -202,6 +213,29 @@ export function MapView({
             className: 'bpm-connection-line',
           }}
         />
+      )}
+
+      {hoveredPoiCarpark && (
+        <Fragment>
+          <Polyline
+            positions={[
+              [hoveredPoiCarpark.poi.lat, hoveredPoiCarpark.poi.lng],
+              [hoveredPoiCarpark.carpark.lat, hoveredPoiCarpark.carpark.lng],
+            ]}
+            pathOptions={{
+              color: '#7a5a3a',
+              weight: 2,
+              dashArray: '2 4',
+              opacity: 0.9,
+              className: 'bpm-carpark-line',
+            }}
+          />
+          <Marker
+            position={[hoveredPoiCarpark.carpark.lat, hoveredPoiCarpark.carpark.lng]}
+            icon={carparkIcon()}
+            interactive={false}
+          />
+        </Fragment>
       )}
 
       {regionPolygon && (

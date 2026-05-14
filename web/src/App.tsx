@@ -18,7 +18,7 @@ import { PromoteButton } from './components/PromoteButton';
 import { LocationSearchBox } from './components/LocationSearchBox';
 import { pointInGeometry } from './lib/pointInPolygon';
 import type { BBox } from './lib/bboxHysteresis';
-import type { ApiCandidate, ApiProperty } from './api';
+import type { ApiCandidate, ApiPoi, ApiProperty } from './api';
 
 function candidateAsProperty(c: ApiCandidate): ApiProperty {
   return {
@@ -42,6 +42,10 @@ export function App() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
   const [hoveredTrailId, setHoveredTrailId] = useState<number | null>(null);
+  const [hoveredPoiCarpark, setHoveredPoiCarpark] = useState<{
+    poi: ApiPoi;
+    carpark: { lat: number; lng: number };
+  } | null>(null);
   const [discoverEnabled, setDiscoverEnabled] = useState(false);
   const [bbox, setBbox] = useState<BBox | null>(null);
   const [promotedCount, setPromotedCount] = useState(0);
@@ -137,6 +141,7 @@ export function App() {
             properties={propertyList}
             selectedPropertyId={selectedPropertyId}
             hoveredTrailId={hoveredTrailId}
+            hoveredPoiCarpark={hoveredPoiCarpark}
             onSelectProperty={(id) => {
               setSelectedPropertyId(id);
               if (id !== null) setSelectedCandidateId(null);
@@ -169,6 +174,10 @@ export function App() {
             setSelectedCandidateId(null);
           }}
           onHoverTrail={setHoveredTrailId}
+          onHoverPoi={(poi, carpark) => {
+            if (poi && carpark) setHoveredPoiCarpark({ poi, carpark });
+            else setHoveredPoiCarpark(null);
+          }}
           extraAction={
             selectedCandidate ? (
               <PromoteButton candidateId={selectedCandidate.id} onPromoted={handlePromoted} />

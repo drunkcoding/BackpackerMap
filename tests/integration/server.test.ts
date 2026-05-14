@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import type { Database } from 'better-sqlite3';
-import { openDb } from '../../src/db/repo.ts';
+import { openDb, getPoiCarpark } from '../../src/db/repo.ts';
 import { createApp } from '../../src/server/app.ts';
-import type { LatLng } from '../../src/routing/ors.ts';
+import { NoRoutableRouteError, type LatLng } from '../../src/routing/ors.ts';
+import type { OverpassClient } from '../../src/routing/overpass.ts';
 
 function seed(db: Database): { propertyId: number; trailId: number; poiId: number } {
   db.exec("INSERT INTO source (kind) VALUES ('alltrails'), ('airbnb'), ('google_maps')");
@@ -179,5 +180,169 @@ describe('HTTP API', () => {
     );
     expect(trailAgain.body.cached).toBe(true);
     expect(orsCalls).toBe(2);
+  });
+});
+
+describe('GET /api/distance — carpark fallback (POI 422 path)', () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = openDb(':memory:');
+  });
+  afterEach(() => db.close());
+
+  it('on POI 422, queries Overpass, retries ORS to carpark, returns viaCarpark', async () => {
+    const { propertyId, poiId } = seed(db);
+
+    const ors = {
+      getDrivingDistance: vi
+        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number }>>()
+        .mockRejectedValueOnce(new NoRoutableRouteError('point not near road'))
+        .mockResolvedValueOnce({ meters: 9000, seconds: 720 }),
+    };
+    const overpass: OverpassClient = {
+      findNearestCarpark: vi.fn(async () => ({
+        point: { lat: 56.2702, lng: -4.7141 },
+        radiusMeters: 1000,
+      })),
+    };
+    const app = createApp({ db, ors, overpass });
+
+    const res = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=poi&targetId=${poiId}`,
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      meters: 9000,
+      seconds: 720,
+      cached: false,
+      viaCarpark: { lat: 56.2702, lng: -4.7141 },
+    });
+    expect(ors.getDrivingDistance).toHaveBeenCalledTimes(2);
+    expect(overpass.findNearestCarpark).toHaveBeenCalledTimes(1);
+
+    const stored = getPoiCarpark(db, poiId);
+    expect(stored).toMatchObject({ lat: 56.2702, lng: -4.7141, radiusMeters: 1000 });
+  });
+
+  it('cached carpark route returns viaCarpark on second call without ORS or Overpass', async () => {
+    const { propertyId, poiId } = seed(db);
+
+    const ors = {
+      getDrivingDistance: vi
+        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number }>>()
+        .mockRejectedValueOnce(new NoRoutableRouteError('point not near road'))
+        .mockResolvedValueOnce({ meters: 9000, seconds: 720 }),
+    };
+    const overpass: OverpassClient = {
+      findNearestCarpark: vi.fn(async () => ({
+        point: { lat: 56.2702, lng: -4.7141 },
+        radiusMeters: 1000,
+      })),
+    };
+    const app = createApp({ db, ors, overpass });
+
+    await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=poi&targetId=${poiId}`,
+    );
+
+    const second = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=poi&targetId=${poiId}`,
+    );
+    expect(second.status).toBe(200);
+    expect(second.body).toEqual({
+      meters: 9000,
+      seconds: 720,
+      cached: true,
+      viaCarpark: { lat: 56.2702, lng: -4.7141 },
+    });
+    expect(ors.getDrivingDistance).toHaveBeenCalledTimes(2);
+    expect(overpass.findNearestCarpark).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns 422 when Overpass finds no carpark within max radius', async () => {
+    const { propertyId, poiId } = seed(db);
+
+    const ors = {
+      getDrivingDistance: vi
+        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number }>>()
+        .mockRejectedValue(new NoRoutableRouteError('point not near road')),
+    };
+    const overpass: OverpassClient = {
+      findNearestCarpark: vi.fn(async () => null),
+    };
+    const app = createApp({ db, ors, overpass });
+
+    const res = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=poi&targetId=${poiId}`,
+    );
+    expect(res.status).toBe(422);
+    expect(res.body.error).toBe('no driving route');
+    expect(overpass.findNearestCarpark).toHaveBeenCalledTimes(1);
+
+    const stored = getPoiCarpark(db, poiId);
+    expect(stored).not.toBeNull();
+    expect(stored!.lat).toBeNull();
+    expect(stored!.lng).toBeNull();
+  });
+
+  it('returns 422 when the second-leg ORS call (to carpark) also fails', async () => {
+    const { propertyId, poiId } = seed(db);
+
+    const ors = {
+      getDrivingDistance: vi
+        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number }>>()
+        .mockRejectedValueOnce(new NoRoutableRouteError('first leg'))
+        .mockRejectedValueOnce(new NoRoutableRouteError('carpark also unreachable')),
+    };
+    const overpass: OverpassClient = {
+      findNearestCarpark: vi.fn(async () => ({
+        point: { lat: 56.2702, lng: -4.7141 },
+        radiusMeters: 1000,
+      })),
+    };
+    const app = createApp({ db, ors, overpass });
+
+    const res = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=poi&targetId=${poiId}`,
+    );
+    expect(res.status).toBe(422);
+    expect(ors.getDrivingDistance).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips carpark fallback entirely for trail targets', async () => {
+    const { propertyId, trailId } = seed(db);
+
+    const ors = {
+      getDrivingDistance: vi
+        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number }>>()
+        .mockRejectedValue(new NoRoutableRouteError('off road')),
+    };
+    const overpass: OverpassClient = {
+      findNearestCarpark: vi.fn(),
+    };
+    const app = createApp({ db, ors, overpass });
+
+    const res = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=trail&targetId=${trailId}`,
+    );
+    expect(res.status).toBe(422);
+    expect(overpass.findNearestCarpark).not.toHaveBeenCalled();
+  });
+
+  it('skips carpark fallback when overpass dep is not provided', async () => {
+    const { propertyId, poiId } = seed(db);
+
+    const ors = {
+      getDrivingDistance: vi
+        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number }>>()
+        .mockRejectedValue(new NoRoutableRouteError('off road')),
+    };
+    const app = createApp({ db, ors });
+
+    const res = await request(app).get(
+      `/api/distance?propertyId=${propertyId}&targetKind=poi&targetId=${poiId}`,
+    );
+    expect(res.status).toBe(422);
   });
 });

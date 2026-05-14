@@ -5,7 +5,12 @@ import type { Database } from 'better-sqlite3';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const MIGRATIONS = ['0001_init.sql', '0002_candidate.sql', '0003_pois.sql'];
+const MIGRATIONS = [
+  '0001_init.sql',
+  '0002_candidate.sql',
+  '0003_pois.sql',
+  '0004_poi_carpark.sql',
+];
 
 export function migrate(db: Database): void {
   db.exec(`CREATE TABLE IF NOT EXISTS _migration (

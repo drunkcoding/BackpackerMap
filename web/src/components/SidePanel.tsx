@@ -13,6 +13,7 @@ export interface SidePanelProps {
   onToggleCollection?: (collection: string) => void;
   onClose: () => void;
   onHoverTrail?: (trailId: number | null) => void;
+  onHoverPoi?: (poi: ApiPoi | null, viaCarpark: { lat: number; lng: number } | null) => void;
   extraAction?: ReactNode;
 }
 
@@ -24,6 +25,7 @@ export function SidePanel({
   onToggleCollection,
   onClose,
   onHoverTrail,
+  onHoverPoi,
   extraAction,
 }: SidePanelProps) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
@@ -95,7 +97,12 @@ export function SidePanel({
                   Select a list above to see nearby places.
                 </p>
               ) : (
-                <PoiDistanceList property={property} pois={visiblePois} showHeading={false} />
+                <PoiDistanceList
+                  property={property}
+                  pois={visiblePois}
+                  showHeading={false}
+                  {...(onHoverPoi ? { onHoverPoi } : {})}
+                />
               )}
             </>
           )}

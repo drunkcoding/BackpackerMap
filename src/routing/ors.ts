@@ -135,16 +135,32 @@ export interface CachedDistanceDeps {
   ): { from: LatLng; to: LatLng } | null;
 }
 
+export interface DrivingDistanceResult {
+  meters: number;
+  seconds: number;
+  cached: boolean;
+  viaCarpark: { lat: number; lng: number } | null;
+}
+
 export async function getCachedDrivingDistance(
   db: Database,
   propertyId: number,
   targetKind: TargetKind,
   targetId: number,
   deps: CachedDistanceDeps,
-): Promise<{ meters: number; seconds: number; cached: boolean }> {
+): Promise<DrivingDistanceResult> {
   const existing = getRoute(db, propertyId, targetKind, targetId);
   if (existing) {
-    return { meters: existing.meters, seconds: existing.seconds, cached: true };
+    const viaCarpark =
+      existing.viaCarparkLat !== null && existing.viaCarparkLng !== null
+        ? { lat: existing.viaCarparkLat, lng: existing.viaCarparkLng }
+        : null;
+    return {
+      meters: existing.meters,
+      seconds: existing.seconds,
+      cached: true,
+      viaCarpark,
+    };
   }
   const coords = deps.getCoords(propertyId, targetKind, targetId);
   if (!coords) {
@@ -152,5 +168,5 @@ export async function getCachedDrivingDistance(
   }
   const fresh = await deps.client.getDrivingDistance(coords.from, coords.to);
   setRoute(db, propertyId, targetKind, targetId, fresh.meters, fresh.seconds);
-  return { meters: fresh.meters, seconds: fresh.seconds, cached: false };
+  return { meters: fresh.meters, seconds: fresh.seconds, cached: false, viaCarpark: null };
 }

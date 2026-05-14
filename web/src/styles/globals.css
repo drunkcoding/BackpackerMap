@@ -730,3 +730,28 @@ body {
     box-shadow: 0 0 0 12px rgba(201, 166, 97, 0);
   }
 }
+
+.bpm-carpark-marker {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f4efe5;
+  color: #7a5a3a;
+  border: 1.5px solid #7a5a3a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.25);
+  pointer-events: none;
+}
+
+.bpm-via-carpark {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #7a5a3a;
+  letter-spacing: 0.04em;
+}

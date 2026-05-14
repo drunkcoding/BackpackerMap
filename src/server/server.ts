@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDb, pruneSearchCache } from '../db/repo.ts';
 import { createOrsClient } from '../routing/ors.ts';
+import { createOverpassClient } from '../routing/overpass.ts';
 import { createApp } from './app.ts';
 import { createDispatcher, filterEnabledProviders } from '../search/dispatcher.ts';
 import { createPhotonClient } from './geocode/photon.ts';
@@ -21,6 +22,7 @@ if (!apiKey) {
 
 const db = openDb(dbPath);
 const ors = createOrsClient({ apiKey });
+const overpass = createOverpassClient();
 
 const enabledProviders = (process.env['SEARCH_PROVIDERS'] ?? 'airbnb,booking')
   .split(',')
@@ -143,6 +145,7 @@ const polygon = createPolygonFetcher();
 const app = createApp({
   db,
   ors,
+  overpass,
   searchDispatcher: dispatcher,
   searchCacheTtlMs: cacheTtlMs,
   photon,
