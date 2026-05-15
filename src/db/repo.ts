@@ -54,6 +54,18 @@ export interface RouteEntry {
   geometry: string | null;
 }
 
+export interface CandidateRouteEntry {
+  candidateId: number;
+  targetKind: TargetKind;
+  targetId: number;
+  meters: number;
+  seconds: number;
+  computedAt: string;
+  viaCarparkLat: number | null;
+  viaCarparkLng: number | null;
+  geometry: string | null;
+}
+
 export function openDb(path: string): DatabaseType {
   if (path !== ':memory:') {
     mkdirSync(dirname(path), { recursive: true });
@@ -268,6 +280,95 @@ export function setRoute(
     viaCarpark?.lng ?? null,
     geometry,
   );
+}
+
+interface CandidateRouteRow {
+  candidate_id: number;
+  target_kind: TargetKind;
+  target_id: number;
+  meters: number;
+  seconds: number;
+  computed_at: string;
+  via_carpark_lat: number | null;
+  via_carpark_lng: number | null;
+  geometry: string | null;
+}
+
+export function getCandidateRoute(
+  db: DatabaseType,
+  candidateId: number,
+  targetKind: TargetKind,
+  targetId: number,
+): CandidateRouteEntry | null {
+  const row = db
+    .prepare<[number, TargetKind, number], CandidateRouteRow>(
+      'SELECT * FROM candidate_route_cache WHERE candidate_id = ? AND target_kind = ? AND target_id = ?',
+    )
+    .get(candidateId, targetKind, targetId);
+  if (!row) return null;
+  return {
+    candidateId: row.candidate_id,
+    targetKind: row.target_kind,
+    targetId: row.target_id,
+    meters: row.meters,
+    seconds: row.seconds,
+    computedAt: row.computed_at,
+    viaCarparkLat: row.via_carpark_lat,
+    viaCarparkLng: row.via_carpark_lng,
+    geometry: row.geometry,
+  };
+}
+
+export function setCandidateRoute(
+  db: DatabaseType,
+  candidateId: number,
+  targetKind: TargetKind,
+  targetId: number,
+  meters: number,
+  seconds: number,
+  viaCarpark: { lat: number; lng: number } | null = null,
+  geometry: string | null = null,
+): void {
+  db.prepare(
+    `INSERT INTO candidate_route_cache
+       (candidate_id, target_kind, target_id, meters, seconds, via_carpark_lat, via_carpark_lng, geometry)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT (candidate_id, target_kind, target_id) DO UPDATE SET
+       meters = excluded.meters,
+       seconds = excluded.seconds,
+       via_carpark_lat = excluded.via_carpark_lat,
+       via_carpark_lng = excluded.via_carpark_lng,
+       geometry = excluded.geometry,
+       computed_at = datetime('now')`,
+  ).run(
+    candidateId,
+    targetKind,
+    targetId,
+    meters,
+    seconds,
+    viaCarpark?.lat ?? null,
+    viaCarpark?.lng ?? null,
+    geometry,
+  );
+}
+
+export function transferCandidateRoutesToProperty(
+  db: DatabaseType,
+  candidateId: number,
+  propertyId: number,
+): number {
+  const info = db
+    .prepare(
+      `INSERT OR IGNORE INTO route_cache
+         (property_id, target_kind, target_id, meters, seconds, computed_at,
+          via_carpark_lat, via_carpark_lng, geometry)
+       SELECT ?, target_kind, target_id, meters, seconds, computed_at,
+              via_carpark_lat, via_carpark_lng, geometry
+       FROM candidate_route_cache
+       WHERE candidate_id = ?`,
+    )
+    .run(propertyId, candidateId);
+  return Number(info.changes);
 }
 
 export interface PoiInput {
@@ -656,53 +757,61 @@ export function promoteCandidateToProperty(
   db: DatabaseType,
   candidateId: number,
 ): Property | null {
-  const candidate = getCandidate(db, candidateId);
-  if (!candidate) return null;
-  const sourceKind: SourceKind = candidate.provider;
-  const sourceId = getOrCreateSource(db, sourceKind);
+  const txn = db.transaction((): Property | null => {
+    const candidate = getCandidate(db, candidateId);
+    if (!candidate) return null;
+    const sourceKind: SourceKind = candidate.provider;
+    const sourceId = getOrCreateSource(db, sourceKind);
 
-  const existing = db
-    .prepare<[Provider, string], { id: number }>(
-      'SELECT id FROM property WHERE provider = ? AND external_id = ?',
-    )
-    .get(candidate.provider, candidate.externalId);
-  if (existing) {
-    return upsertProperty(db, {
-      sourceId,
-      provider: candidate.provider,
-      externalId: candidate.externalId,
-      name: candidate.name,
-      url: candidate.url,
-      lat: candidate.lat,
-      lng: candidate.lng,
-      priceLabel: candidate.priceLabel,
-      photoUrl: candidate.photoUrl,
-      rawJson: candidate.rawJson,
-      enrichedAt: new Date().toISOString(),
-    });
-  }
+    const existing = db
+      .prepare<[Provider, string], { id: number }>(
+        'SELECT id FROM property WHERE provider = ? AND external_id = ?',
+      )
+      .get(candidate.provider, candidate.externalId);
 
-  const stmt = db.prepare(`
-    INSERT INTO property
-      (source_id, provider, external_id, name, url, lat, lng, price_label, photo_url,
-       raw_json, enriched_at, promoted_from_candidate_id)
-    VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    RETURNING *
-  `);
-  const row = stmt.get(
-    sourceId,
-    candidate.provider,
-    candidate.externalId,
-    candidate.name,
-    candidate.url,
-    candidate.lat,
-    candidate.lng,
-    candidate.priceLabel,
-    candidate.photoUrl,
-    candidate.rawJson,
-    new Date().toISOString(),
-    candidate.id,
-  ) as PropertyRow & { promoted_from_candidate_id: number | null };
-  return mapProperty(row);
+    let property: Property;
+    if (existing) {
+      property = upsertProperty(db, {
+        sourceId,
+        provider: candidate.provider,
+        externalId: candidate.externalId,
+        name: candidate.name,
+        url: candidate.url,
+        lat: candidate.lat,
+        lng: candidate.lng,
+        priceLabel: candidate.priceLabel,
+        photoUrl: candidate.photoUrl,
+        rawJson: candidate.rawJson,
+        enrichedAt: new Date().toISOString(),
+      });
+    } else {
+      const stmt = db.prepare(`
+        INSERT INTO property
+          (source_id, provider, external_id, name, url, lat, lng, price_label, photo_url,
+           raw_json, enriched_at, promoted_from_candidate_id)
+        VALUES
+          (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING *
+      `);
+      const row = stmt.get(
+        sourceId,
+        candidate.provider,
+        candidate.externalId,
+        candidate.name,
+        candidate.url,
+        candidate.lat,
+        candidate.lng,
+        candidate.priceLabel,
+        candidate.photoUrl,
+        candidate.rawJson,
+        new Date().toISOString(),
+        candidate.id,
+      ) as PropertyRow & { promoted_from_candidate_id: number | null };
+      property = mapProperty(row);
+    }
+
+    transferCandidateRoutesToProperty(db, candidateId, property.id);
+    return property;
+  });
+  return txn();
 }

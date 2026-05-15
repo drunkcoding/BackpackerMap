@@ -116,11 +116,16 @@ export const api = {
     targetKind: ApiTargetKind,
     targetId: number,
     signal?: AbortSignal,
-  ) =>
-    getJson<ApiDistance>(
-      `/api/distance?propertyId=${propertyId}&targetKind=${targetKind}&targetId=${targetId}`,
+  ) => {
+    const originParam =
+      propertyId < 0
+        ? `candidateId=${-propertyId}`
+        : `propertyId=${propertyId}`;
+    return getJson<ApiDistance>(
+      `/api/distance?${originParam}&targetKind=${targetKind}&targetId=${targetId}`,
       signal ? { signal } : {},
-    ),
+    );
+  },
   search: (params: URLSearchParams, signal?: AbortSignal) =>
     getJson<ApiSearchResponse>(`/api/search?${params.toString()}`, signal ? { signal } : {}),
   promoteCandidate: (id: number) =>

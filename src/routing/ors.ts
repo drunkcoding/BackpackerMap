@@ -1,5 +1,4 @@
-import type { Database } from 'better-sqlite3';
-import { getRoute, setRoute, type TargetKind } from '../db/repo.ts';
+import type { TargetKind } from '../db/repo.ts';
 
 export interface LatLng {
   lat: number;
@@ -153,13 +152,24 @@ function extractGeometry(geometry: unknown): RouteGeometry | null {
   return out.length > 0 ? out : null;
 }
 
+export interface CachedRouteRow {
+  meters: number;
+  seconds: number;
+  viaCarparkLat: number | null;
+  viaCarparkLng: number | null;
+  geometry: string | null;
+}
+
 export interface CachedDistanceDeps {
   client: { getDrivingDistance(from: LatLng, to: LatLng): Promise<DrivingDistance> };
   getCoords(
-    propertyId: number,
+    fromId: number,
     targetKind: TargetKind,
     targetId: number,
   ): { from: LatLng; to: LatLng } | null;
+  cacheGet(fromId: number, targetKind: TargetKind, targetId: number): CachedRouteRow | null;
+  cacheSet(fromId: number, targetKind: TargetKind, targetId: number, row: CachedRouteRow): void;
+  fromKindLabel?: string;
 }
 
 export interface DrivingDistanceResult {
@@ -171,13 +181,12 @@ export interface DrivingDistanceResult {
 }
 
 export async function getCachedDrivingDistance(
-  db: Database,
-  propertyId: number,
+  fromId: number,
   targetKind: TargetKind,
   targetId: number,
   deps: CachedDistanceDeps,
 ): Promise<DrivingDistanceResult> {
-  const existing = getRoute(db, propertyId, targetKind, targetId);
+  const existing = deps.cacheGet(fromId, targetKind, targetId);
   if (existing) {
     const viaCarpark =
       existing.viaCarparkLat !== null && existing.viaCarparkLng !== null
@@ -191,13 +200,20 @@ export async function getCachedDrivingDistance(
       geometry: parseStoredGeometry(existing.geometry),
     };
   }
-  const coords = deps.getCoords(propertyId, targetKind, targetId);
+  const coords = deps.getCoords(fromId, targetKind, targetId);
   if (!coords) {
-    throw new Error(`unknown property/${targetKind} pair: ${propertyId}/${targetId}`);
+    const fromLabel = deps.fromKindLabel ?? 'property';
+    throw new Error(`unknown ${fromLabel}/${targetKind} pair: ${fromId}/${targetId}`);
   }
   const fresh = await deps.client.getDrivingDistance(coords.from, coords.to);
   const serialized = fresh.geometry ? JSON.stringify(fresh.geometry) : null;
-  setRoute(db, propertyId, targetKind, targetId, fresh.meters, fresh.seconds, null, serialized);
+  deps.cacheSet(fromId, targetKind, targetId, {
+    meters: fresh.meters,
+    seconds: fresh.seconds,
+    viaCarparkLat: null,
+    viaCarparkLng: null,
+    geometry: serialized,
+  });
   return {
     meters: fresh.meters,
     seconds: fresh.seconds,

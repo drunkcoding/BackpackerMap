@@ -2,14 +2,74 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Database } from 'better-sqlite3';
-import { openDb } from '../../src/db/repo.ts';
 import {
+  getCandidateRoute,
+  getRoute,
+  openDb,
+  setCandidateRoute,
+  setRoute,
+  type TargetKind,
+} from '../../src/db/repo.ts';
+import {
+  type CachedRouteRow,
   createOrsClient,
   getCachedDrivingDistance,
   OrsRequestError,
   RateLimitedError,
   type LatLng,
 } from '../../src/routing/ors.ts';
+
+function propertyCacheDeps(db: Database): {
+  cacheGet: (id: number, kind: TargetKind, tId: number) => CachedRouteRow | null;
+  cacheSet: (id: number, kind: TargetKind, tId: number, row: CachedRouteRow) => void;
+} {
+  return {
+    cacheGet: (id, kind, tId) => {
+      const r = getRoute(db, id, kind, tId);
+      if (!r) return null;
+      return {
+        meters: r.meters,
+        seconds: r.seconds,
+        viaCarparkLat: r.viaCarparkLat,
+        viaCarparkLng: r.viaCarparkLng,
+        geometry: r.geometry,
+      };
+    },
+    cacheSet: (id, kind, tId, row) => {
+      const vc =
+        row.viaCarparkLat !== null && row.viaCarparkLng !== null
+          ? { lat: row.viaCarparkLat, lng: row.viaCarparkLng }
+          : null;
+      setRoute(db, id, kind, tId, row.meters, row.seconds, vc, row.geometry);
+    },
+  };
+}
+
+function candidateCacheDeps(db: Database): {
+  cacheGet: (id: number, kind: TargetKind, tId: number) => CachedRouteRow | null;
+  cacheSet: (id: number, kind: TargetKind, tId: number, row: CachedRouteRow) => void;
+} {
+  return {
+    cacheGet: (id, kind, tId) => {
+      const r = getCandidateRoute(db, id, kind, tId);
+      if (!r) return null;
+      return {
+        meters: r.meters,
+        seconds: r.seconds,
+        viaCarparkLat: r.viaCarparkLat,
+        viaCarparkLng: r.viaCarparkLng,
+        geometry: r.geometry,
+      };
+    },
+    cacheSet: (id, kind, tId, row) => {
+      const vc =
+        row.viaCarparkLat !== null && row.viaCarparkLng !== null
+          ? { lat: row.viaCarparkLat, lng: row.viaCarparkLng }
+          : null;
+      setCandidateRoute(db, id, kind, tId, row.meters, row.seconds, vc, row.geometry);
+    },
+  };
+}
 
 const FIXTURE = JSON.parse(
   readFileSync(join(process.cwd(), 'tests', 'fixtures', 'ors', 'route.sample.json'), 'utf8'),
@@ -105,9 +165,10 @@ describe('getCachedDrivingDistance', () => {
         geometry: sampleGeometry,
       })),
     };
-    const first = await getCachedDrivingDistance(db, 1, 'trail', 1, {
+    const first = await getCachedDrivingDistance(1, 'trail', 1, {
       client,
       getCoords: coordsLookup,
+      ...propertyCacheDeps(db),
     });
     expect(first).toEqual({
       meters: 42000,
@@ -118,9 +179,10 @@ describe('getCachedDrivingDistance', () => {
     });
     expect(client.getDrivingDistance).toHaveBeenCalledTimes(1);
 
-    const second = await getCachedDrivingDistance(db, 1, 'trail', 1, {
+    const second = await getCachedDrivingDistance(1, 'trail', 1, {
       client,
       getCoords: coordsLookup,
+      ...propertyCacheDeps(db),
     });
     expect(second).toEqual({
       meters: 42000,
@@ -141,13 +203,71 @@ describe('getCachedDrivingDistance', () => {
     const client = {
       getDrivingDistance: vi.fn(async () => ({ meters: 0, seconds: 0, geometry: null })),
     };
-    const result = await getCachedDrivingDistance(db, 1, 'trail', 1, {
+    const result = await getCachedDrivingDistance(1, 'trail', 1, {
       client,
       getCoords: coordsLookup,
+      ...propertyCacheDeps(db),
     });
     expect(result.meters).toBe(100);
     expect(result.cached).toBe(true);
     expect(result.geometry).toBeNull();
+    expect(client.getDrivingDistance).not.toHaveBeenCalled();
+  });
+
+  it('candidate cache: miss -> fetch + store; hit -> no fetch (parallel to property path)', async () => {
+    db.exec(`
+      INSERT INTO candidate (provider, external_id, name, url, lat, lng, raw_json)
+      VALUES ('airbnb', 'cand1', 'Cand', 'https://example.com', 56.0, -5.0, '{}');
+    `);
+    const candidateId = Number(
+      (db.prepare('SELECT id FROM candidate WHERE external_id = ?').get('cand1') as { id: number })
+        .id,
+    );
+
+    const client = {
+      getDrivingDistance: vi.fn(async () => ({
+        meters: 14000,
+        seconds: 1200,
+        geometry: sampleGeometry,
+      })),
+    };
+    const first = await getCachedDrivingDistance(candidateId, 'trail', 1, {
+      client,
+      getCoords: coordsLookup,
+      ...candidateCacheDeps(db),
+      fromKindLabel: 'candidate',
+    });
+    expect(first.cached).toBe(false);
+    expect(first.meters).toBe(14000);
+    expect(client.getDrivingDistance).toHaveBeenCalledTimes(1);
+
+    const second = await getCachedDrivingDistance(candidateId, 'trail', 1, {
+      client,
+      getCoords: coordsLookup,
+      ...candidateCacheDeps(db),
+      fromKindLabel: 'candidate',
+    });
+    expect(second.cached).toBe(true);
+    expect(second.meters).toBe(14000);
+    expect(second.geometry).toEqual(sampleGeometry);
+    expect(client.getDrivingDistance).toHaveBeenCalledTimes(1);
+
+    expect(getCandidateRoute(db, candidateId, 'trail', 1)).not.toBeNull();
+    expect(getRoute(db, candidateId, 'trail', 1)).toBeNull();
+  });
+
+  it('throws unknown candidate/<kind> when getCoords returns null and fromKindLabel=candidate', async () => {
+    const client = {
+      getDrivingDistance: vi.fn(async () => ({ meters: 0, seconds: 0, geometry: null })),
+    };
+    await expect(
+      getCachedDrivingDistance(99, 'trail', 99, {
+        client,
+        getCoords: () => null,
+        ...candidateCacheDeps(db),
+        fromKindLabel: 'candidate',
+      }),
+    ).rejects.toThrowError('unknown candidate/trail pair: 99/99');
     expect(client.getDrivingDistance).not.toHaveBeenCalled();
   });
 });

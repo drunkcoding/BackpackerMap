@@ -10,9 +10,13 @@ import {
   getPoiCarpark,
   setPoiCarpark,
   setRoute,
+  getRoute,
+  getCandidateRoute,
+  setCandidateRoute,
 } from '../db/repo.ts';
 import {
   getCachedDrivingDistance,
+  type CachedRouteRow,
   type LatLng,
   RateLimitedError,
   OrsRequestError,
@@ -160,7 +164,16 @@ export function createApp(deps: AppDeps): Express {
   });
 
   app.get('/api/distance', async (req: Request, res: Response, next: NextFunction) => {
-    const propertyId = Number(req.query['propertyId']);
+    const hasPropertyId = req.query['propertyId'] !== undefined;
+    const hasCandidateId = req.query['candidateId'] !== undefined;
+    if (hasPropertyId && hasCandidateId) {
+      res.status(400).json({ error: 'pass exactly one of propertyId or candidateId' });
+      return;
+    }
+    if (!hasPropertyId && !hasCandidateId) {
+      res.status(400).json({ error: 'propertyId or candidateId required' });
+      return;
+    }
 
     let targetKind: 'trail' | 'poi';
     let targetId: number;
@@ -176,49 +189,76 @@ export function createApp(deps: AppDeps): Express {
       targetKind = 'trail';
       targetId = Number(req.query['trailId']);
     }
-
-    if (!Number.isInteger(propertyId) || !Number.isInteger(targetId)) {
-      res.status(400).json({ error: 'propertyId and target id must be integers' });
+    if (!Number.isInteger(targetId)) {
+      res.status(400).json({ error: 'target id must be an integer' });
       return;
     }
+
+    const fromOrigin = hasCandidateId ? 'candidate' : 'property';
+    const fromId = Number(req.query[hasCandidateId ? 'candidateId' : 'propertyId']);
+    if (!Number.isInteger(fromId) || fromId <= 0) {
+      res.status(400).json({ error: `${fromOrigin}Id must be a positive integer` });
+      return;
+    }
+
+    const lookupOriginCoords = (id: number): LatLng | null => {
+      if (fromOrigin === 'property') {
+        const row = deps.db
+          .prepare<
+            [number],
+            { lat: number | null; lng: number | null }
+          >('SELECT lat, lng FROM property WHERE id = ?')
+          .get(id);
+        if (!row || row.lat === null || row.lng === null) return null;
+        return { lat: row.lat, lng: row.lng };
+      }
+      const row = deps.db
+        .prepare<[number], { lat: number; lng: number }>('SELECT lat, lng FROM candidate WHERE id = ?')
+        .get(id);
+      if (!row) return null;
+      return { lat: row.lat, lng: row.lng };
+    };
+
+    const originCoords = lookupOriginCoords(fromId);
+    if (!originCoords) {
+      res.status(404).json({ error: `${fromOrigin} not found` });
+      return;
+    }
+
+    const cacheDeps =
+      fromOrigin === 'property'
+        ? makePropertyCacheDeps(deps.db)
+        : makeCandidateCacheDeps(deps.db);
+
+    const lookupTargetCoords = (tKind: 'trail' | 'poi', tId: number): LatLng | null => {
+      if (tKind === 'trail') {
+        const tRow = deps.db
+          .prepare<
+            [number],
+            { trailhead_lat: number; trailhead_lng: number }
+          >('SELECT trailhead_lat, trailhead_lng FROM trail WHERE id = ?')
+          .get(tId);
+        if (!tRow) return null;
+        return { lat: tRow.trailhead_lat, lng: tRow.trailhead_lng };
+      }
+      const poiRow = deps.db
+        .prepare<[number], { lat: number; lng: number }>('SELECT lat, lng FROM poi WHERE id = ?')
+        .get(tId);
+      if (!poiRow) return null;
+      return { lat: poiRow.lat, lng: poiRow.lng };
+    };
+
     try {
-      const result = await getCachedDrivingDistance(deps.db, propertyId, targetKind, targetId, {
+      const result = await getCachedDrivingDistance(fromId, targetKind, targetId, {
         client: deps.ors,
-        getCoords: (pId, tKind, tId) => {
-          const pRow = deps.db
-            .prepare<
-              [number],
-              { lat: number | null; lng: number | null }
-            >('SELECT lat, lng FROM property WHERE id = ?')
-            .get(pId);
-          if (!pRow || pRow.lat === null || pRow.lng === null) return null;
-
-          if (tKind === 'trail') {
-            const tRow = deps.db
-              .prepare<
-                [number],
-                { trailhead_lat: number; trailhead_lng: number }
-              >('SELECT trailhead_lat, trailhead_lng FROM trail WHERE id = ?')
-              .get(tId);
-            if (!tRow) return null;
-            return {
-              from: { lat: pRow.lat, lng: pRow.lng },
-              to: { lat: tRow.trailhead_lat, lng: tRow.trailhead_lng },
-            };
-          }
-
-          const poiRow = deps.db
-            .prepare<
-              [number],
-              { lat: number; lng: number }
-            >('SELECT lat, lng FROM poi WHERE id = ?')
-            .get(tId);
-          if (!poiRow) return null;
-          return {
-            from: { lat: pRow.lat, lng: pRow.lng },
-            to: { lat: poiRow.lat, lng: poiRow.lng },
-          };
+        getCoords: (_id, tKind, tId) => {
+          const to = lookupTargetCoords(tKind, tId);
+          if (!to) return null;
+          return { from: originCoords, to };
         },
+        cacheGet: cacheDeps.cacheGet,
+        cacheSet: cacheDeps.cacheSet,
+        fromKindLabel: fromOrigin,
       });
       res.json(serializeDistance(result));
     } catch (err) {
@@ -229,16 +269,20 @@ export function createApp(deps: AppDeps): Express {
       if (err instanceof NoRoutableRouteError) {
         if (targetKind === 'poi' && deps.overpass) {
           try {
-            const viaResult = await tryCarparkFallback(
-              deps.db,
-              deps.ors,
-              deps.overpass,
-              propertyId,
-              targetId,
-            );
-            if (viaResult) {
-              res.json(serializeDistance(viaResult));
-              return;
+            const poiCoords = lookupTargetCoords('poi', targetId);
+            if (poiCoords) {
+              const viaResult = await tryCarparkFallback(
+                deps.db,
+                deps.ors,
+                deps.overpass,
+                { kind: fromOrigin, id: fromId, from: originCoords },
+                { id: targetId, coords: poiCoords },
+                cacheDeps.cacheSet,
+              );
+              if (viaResult) {
+                res.json(serializeDistance(viaResult));
+                return;
+              }
             }
           } catch (innerErr) {
             if (innerErr instanceof RateLimitedError) {
@@ -348,6 +392,70 @@ interface DistanceFallbackResult {
   geometry: RouteGeometry | null;
 }
 
+interface CacheWriter {
+  (
+    fromId: number,
+    targetKind: 'trail' | 'poi',
+    targetId: number,
+    row: CachedRouteRow,
+  ): void;
+}
+
+interface CacheDeps {
+  cacheGet: (
+    fromId: number,
+    targetKind: 'trail' | 'poi',
+    targetId: number,
+  ) => CachedRouteRow | null;
+  cacheSet: CacheWriter;
+}
+
+function makePropertyCacheDeps(db: Database): CacheDeps {
+  return {
+    cacheGet: (id, kind, tId) => {
+      const r = getRoute(db, id, kind, tId);
+      if (!r) return null;
+      return {
+        meters: r.meters,
+        seconds: r.seconds,
+        viaCarparkLat: r.viaCarparkLat,
+        viaCarparkLng: r.viaCarparkLng,
+        geometry: r.geometry,
+      };
+    },
+    cacheSet: (id, kind, tId, row) => {
+      const viaCarpark =
+        row.viaCarparkLat !== null && row.viaCarparkLng !== null
+          ? { lat: row.viaCarparkLat, lng: row.viaCarparkLng }
+          : null;
+      setRoute(db, id, kind, tId, row.meters, row.seconds, viaCarpark, row.geometry);
+    },
+  };
+}
+
+function makeCandidateCacheDeps(db: Database): CacheDeps {
+  return {
+    cacheGet: (id, kind, tId) => {
+      const r = getCandidateRoute(db, id, kind, tId);
+      if (!r) return null;
+      return {
+        meters: r.meters,
+        seconds: r.seconds,
+        viaCarparkLat: r.viaCarparkLat,
+        viaCarparkLng: r.viaCarparkLng,
+        geometry: r.geometry,
+      };
+    },
+    cacheSet: (id, kind, tId, row) => {
+      const viaCarpark =
+        row.viaCarparkLat !== null && row.viaCarparkLng !== null
+          ? { lat: row.viaCarparkLat, lng: row.viaCarparkLng }
+          : null;
+      setCandidateRoute(db, id, kind, tId, row.meters, row.seconds, viaCarpark, row.geometry);
+    },
+  };
+}
+
 async function tryCarparkFallback(
   db: Database,
   ors: {
@@ -357,46 +465,35 @@ async function tryCarparkFallback(
     ): Promise<{ meters: number; seconds: number; geometry: RouteGeometry | null }>;
   },
   overpass: OverpassClient,
-  propertyId: number,
-  poiId: number,
+  origin: { kind: 'property' | 'candidate'; id: number; from: LatLng },
+  poi: { id: number; coords: LatLng },
+  cacheSet: CacheWriter,
 ): Promise<DistanceFallbackResult | null> {
-  const pRow = db
-    .prepare<
-      [number],
-      { lat: number | null; lng: number | null }
-    >('SELECT lat, lng FROM property WHERE id = ?')
-    .get(propertyId);
-  if (!pRow || pRow.lat === null || pRow.lng === null) return null;
-  const poiRow = db
-    .prepare<[number], { lat: number; lng: number }>('SELECT lat, lng FROM poi WHERE id = ?')
-    .get(poiId);
-  if (!poiRow) return null;
-
-  const cached = getPoiCarpark(db, poiId);
+  const cached = getPoiCarpark(db, poi.id);
   let carpark: { lat: number; lng: number } | null;
   if (cached) {
     if (cached.lat === null || cached.lng === null) return null;
     carpark = { lat: cached.lat, lng: cached.lng };
   } else {
-    const found = await overpass.findNearestCarpark(
-      { lat: poiRow.lat, lng: poiRow.lng },
-      RADII_METERS,
-    );
+    const found = await overpass.findNearestCarpark(poi.coords, RADII_METERS);
     if (!found) {
-      setPoiCarpark(db, poiId, null, null, RADII_METERS[RADII_METERS.length - 1] ?? 0);
+      setPoiCarpark(db, poi.id, null, null, RADII_METERS[RADII_METERS.length - 1] ?? 0);
       return null;
     }
-    setPoiCarpark(db, poiId, found.point.lat, found.point.lng, found.radiusMeters);
+    setPoiCarpark(db, poi.id, found.point.lat, found.point.lng, found.radiusMeters);
     carpark = found.point;
   }
 
   try {
-    const fresh = await ors.getDrivingDistance(
-      { lat: pRow.lat, lng: pRow.lng },
-      { lat: carpark.lat, lng: carpark.lng },
-    );
+    const fresh = await ors.getDrivingDistance(origin.from, { lat: carpark.lat, lng: carpark.lng });
     const serialized = fresh.geometry ? JSON.stringify(fresh.geometry) : null;
-    setRoute(db, propertyId, 'poi', poiId, fresh.meters, fresh.seconds, carpark, serialized);
+    cacheSet(origin.id, 'poi', poi.id, {
+      meters: fresh.meters,
+      seconds: fresh.seconds,
+      viaCarparkLat: carpark.lat,
+      viaCarparkLng: carpark.lng,
+      geometry: serialized,
+    });
     return {
       meters: fresh.meters,
       seconds: fresh.seconds,

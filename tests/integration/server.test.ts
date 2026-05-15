@@ -1,7 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import type { Database } from 'better-sqlite3';
-import { openDb, getPoiCarpark } from '../../src/db/repo.ts';
+import {
+  openDb,
+  getPoiCarpark,
+  upsertCandidate,
+  promoteCandidateToProperty,
+  getCandidateRoute,
+  getRoute,
+} from '../../src/db/repo.ts';
 import { createApp } from '../../src/server/app.ts';
 import { NoRoutableRouteError, type LatLng } from '../../src/routing/ors.ts';
 import type { OverpassClient } from '../../src/routing/overpass.ts';
@@ -427,5 +434,186 @@ describe('GET /api/distance — carpark fallback (POI 422 path)', () => {
       `/api/distance?propertyId=${propertyId}&targetKind=poi&targetId=${poiId}`,
     );
     expect(res.status).toBe(422);
+  });
+});
+
+describe('GET /api/distance — candidateId (Discover candidates)', () => {
+  let db: Database;
+  let orsCalls: number;
+  const ors = {
+    getDrivingDistance: vi.fn(async (_from: LatLng, _to: LatLng) => {
+      orsCalls++;
+      return { meters: 14000, seconds: 1200, geometry: null };
+    }),
+  };
+
+  beforeEach(() => {
+    db = openDb(':memory:');
+    orsCalls = 0;
+    ors.getDrivingDistance.mockClear();
+  });
+  afterEach(() => db.close());
+
+  function seedWithCandidate(): { candidateId: number; trailId: number; poiId: number } {
+    const s = seed(db);
+    const candidate = upsertCandidate(db, {
+      provider: 'airbnb',
+      externalId: 'cand-auronzo',
+      name: 'B&B Meublè Giustina Auronzo di Cadore',
+      url: 'https://www.airbnb.com/rooms/28403749',
+      lat: 46.55139,
+      lng: 12.44304,
+      priceLabel: null,
+      priceAmount: null,
+      currency: null,
+      photoUrl: null,
+      rating: null,
+      reviewCount: null,
+      rawJson: '{}',
+    });
+    return { candidateId: candidate.id, trailId: s.trailId, poiId: s.poiId };
+  }
+
+  it('happy path: candidate -> trail returns 200 + cached on second call', async () => {
+    const { candidateId, trailId } = seedWithCandidate();
+    const app = createApp({ db, ors });
+
+    const first = await request(app).get(
+      `/api/distance?candidateId=${candidateId}&targetKind=trail&targetId=${trailId}`,
+    );
+    expect(first.status).toBe(200);
+    expect(first.body).toEqual({ meters: 14000, seconds: 1200, cached: false });
+    expect(orsCalls).toBe(1);
+
+    const second = await request(app).get(
+      `/api/distance?candidateId=${candidateId}&targetKind=trail&targetId=${trailId}`,
+    );
+    expect(second.status).toBe(200);
+    expect(second.body).toEqual({ meters: 14000, seconds: 1200, cached: true });
+    expect(orsCalls).toBe(1);
+
+    expect(getCandidateRoute(db, candidateId, 'trail', trailId)).not.toBeNull();
+  });
+
+  it('unknown candidateId returns 404 candidate not found', async () => {
+    seedWithCandidate();
+    const app = createApp({ db, ors });
+    const res = await request(app).get(
+      `/api/distance?candidateId=999&targetKind=trail&targetId=1`,
+    );
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ error: 'candidate not found' });
+    expect(orsCalls).toBe(0);
+  });
+
+  it('unknown trail under valid candidateId returns 404 unknown candidate/trail pair', async () => {
+    const { candidateId } = seedWithCandidate();
+    const app = createApp({ db, ors });
+    const res = await request(app).get(
+      `/api/distance?candidateId=${candidateId}&targetKind=trail&targetId=9999`,
+    );
+    expect(res.status).toBe(404);
+    expect(res.body.error).toMatch(/^unknown candidate\/trail pair/);
+  });
+
+  it('passing both propertyId and candidateId returns 400', async () => {
+    seedWithCandidate();
+    const app = createApp({ db, ors });
+    const res = await request(app).get(
+      '/api/distance?propertyId=1&candidateId=1&targetKind=trail&targetId=1',
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it('passing neither propertyId nor candidateId returns 400', async () => {
+    seedWithCandidate();
+    const app = createApp({ db, ors });
+    const res = await request(app).get('/api/distance?targetKind=trail&targetId=1');
+    expect(res.status).toBe(400);
+  });
+
+  it('carpark fallback works for candidate POI target and writes to candidate_route_cache', async () => {
+    const { candidateId, poiId } = seedWithCandidate();
+
+    const orsLocal = {
+      getDrivingDistance: vi
+        .fn<
+          (
+            from: LatLng,
+            to: LatLng,
+          ) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>
+        >()
+        .mockRejectedValueOnce(new NoRoutableRouteError('off road'))
+        .mockResolvedValueOnce({ meters: 9000, seconds: 720, geometry: null }),
+    };
+    const overpass: OverpassClient = {
+      findNearestCarpark: vi.fn(async () => ({
+        point: { lat: 56.2702, lng: -4.7141 },
+        radiusMeters: 1000,
+      })),
+    };
+    const app = createApp({ db, ors: orsLocal, overpass });
+
+    const res = await request(app).get(
+      `/api/distance?candidateId=${candidateId}&targetKind=poi&targetId=${poiId}`,
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      meters: 9000,
+      seconds: 720,
+      cached: false,
+      viaCarpark: { lat: 56.2702, lng: -4.7141 },
+    });
+
+    const stored = getCandidateRoute(db, candidateId, 'poi', poiId);
+    expect(stored).not.toBeNull();
+    expect(stored!.viaCarparkLat).toBe(56.2702);
+    expect(getRoute(db, candidateId, 'poi', poiId)).toBeNull();
+  });
+
+  it('returns 422 when candidate POI fallback finds no carpark', async () => {
+    const { candidateId, poiId } = seedWithCandidate();
+
+    const orsLocal = {
+      getDrivingDistance: vi
+        .fn<
+          (
+            from: LatLng,
+            to: LatLng,
+          ) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>
+        >()
+        .mockRejectedValue(new NoRoutableRouteError('off road')),
+    };
+    const overpass: OverpassClient = {
+      findNearestCarpark: vi.fn(async () => null),
+    };
+    const app = createApp({ db, ors: orsLocal, overpass });
+
+    const res = await request(app).get(
+      `/api/distance?candidateId=${candidateId}&targetKind=poi&targetId=${poiId}`,
+    );
+    expect(res.status).toBe(422);
+    expect(getCandidateRoute(db, candidateId, 'poi', poiId)).toBeNull();
+  });
+
+  it('promotion transfers candidate route cache: subsequent property request is cached, no ORS', async () => {
+    const { candidateId, trailId } = seedWithCandidate();
+    const app = createApp({ db, ors });
+
+    const candidateRes = await request(app).get(
+      `/api/distance?candidateId=${candidateId}&targetKind=trail&targetId=${trailId}`,
+    );
+    expect(candidateRes.status).toBe(200);
+    expect(orsCalls).toBe(1);
+
+    const promoted = promoteCandidateToProperty(db, candidateId);
+    expect(promoted).not.toBeNull();
+
+    const propertyRes = await request(app).get(
+      `/api/distance?propertyId=${promoted!.id}&targetKind=trail&targetId=${trailId}`,
+    );
+    expect(propertyRes.status).toBe(200);
+    expect(propertyRes.body).toEqual({ meters: 14000, seconds: 1200, cached: true });
+    expect(orsCalls).toBe(1);
   });
 });
