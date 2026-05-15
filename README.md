@@ -19,7 +19,7 @@ Renders in a deliberate "Expedition Field Journal" aesthetic: warm vellum backgr
 - Multi-user / multi-tenant / shared cloud instance
 - Mobile app
 - Real-time updates (ingest is a manual command; the map is a snapshot)
-- Hiking-app feature parity with AllTrails (it's a *housing* app that knows about trails)
+- Hiking-app feature parity with AllTrails (it's a _housing_ app that knows about trails)
 
 ## Quickstart
 

@@ -218,17 +218,19 @@ describe('HTTP API', () => {
       `/api/distance?propertyId=${propertyId}&targetKind=trail&targetId=${trailId}`,
     );
     const cachedBefore = db
-      .prepare<[number], { c: number }>(
-        'SELECT COUNT(*) AS c FROM route_cache WHERE property_id = ?',
-      )
+      .prepare<
+        [number],
+        { c: number }
+      >('SELECT COUNT(*) AS c FROM route_cache WHERE property_id = ?')
       .get(propertyId);
     expect(cachedBefore!.c).toBe(1);
 
     await request(app).delete(`/api/properties/${propertyId}`);
     const cachedAfter = db
-      .prepare<[number], { c: number }>(
-        'SELECT COUNT(*) AS c FROM route_cache WHERE property_id = ?',
-      )
+      .prepare<
+        [number],
+        { c: number }
+      >('SELECT COUNT(*) AS c FROM route_cache WHERE property_id = ?')
       .get(propertyId);
     expect(cachedAfter!.c).toBe(0);
   });
@@ -247,7 +249,12 @@ describe('GET /api/distance — carpark fallback (POI 422 path)', () => {
 
     const ors = {
       getDrivingDistance: vi
-        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>>()
+        .fn<
+          (
+            from: LatLng,
+            to: LatLng,
+          ) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>
+        >()
         .mockRejectedValueOnce(new NoRoutableRouteError('point not near road'))
         .mockResolvedValueOnce({ meters: 9000, seconds: 720, geometry: null }),
     };
@@ -281,7 +288,12 @@ describe('GET /api/distance — carpark fallback (POI 422 path)', () => {
 
     const ors = {
       getDrivingDistance: vi
-        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>>()
+        .fn<
+          (
+            from: LatLng,
+            to: LatLng,
+          ) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>
+        >()
         .mockRejectedValueOnce(new NoRoutableRouteError('point not near road'))
         .mockResolvedValueOnce({ meters: 9000, seconds: 720, geometry: null }),
     };
@@ -316,7 +328,12 @@ describe('GET /api/distance — carpark fallback (POI 422 path)', () => {
 
     const ors = {
       getDrivingDistance: vi
-        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>>()
+        .fn<
+          (
+            from: LatLng,
+            to: LatLng,
+          ) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>
+        >()
         .mockRejectedValue(new NoRoutableRouteError('point not near road')),
     };
     const overpass: OverpassClient = {
@@ -342,7 +359,12 @@ describe('GET /api/distance — carpark fallback (POI 422 path)', () => {
 
     const ors = {
       getDrivingDistance: vi
-        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>>()
+        .fn<
+          (
+            from: LatLng,
+            to: LatLng,
+          ) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>
+        >()
         .mockRejectedValueOnce(new NoRoutableRouteError('first leg'))
         .mockRejectedValueOnce(new NoRoutableRouteError('carpark also unreachable')),
     };
@@ -366,7 +388,12 @@ describe('GET /api/distance — carpark fallback (POI 422 path)', () => {
 
     const ors = {
       getDrivingDistance: vi
-        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>>()
+        .fn<
+          (
+            from: LatLng,
+            to: LatLng,
+          ) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>
+        >()
         .mockRejectedValue(new NoRoutableRouteError('off road')),
     };
     const overpass: OverpassClient = {
@@ -386,7 +413,12 @@ describe('GET /api/distance — carpark fallback (POI 422 path)', () => {
 
     const ors = {
       getDrivingDistance: vi
-        .fn<(from: LatLng, to: LatLng) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>>()
+        .fn<
+          (
+            from: LatLng,
+            to: LatLng,
+          ) => Promise<{ meters: number; seconds: number; geometry: [number, number][] | null }>
+        >()
         .mockRejectedValue(new NoRoutableRouteError('off road')),
     };
     const app = createApp({ db, ors });

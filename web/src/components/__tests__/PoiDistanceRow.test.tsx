@@ -47,10 +47,10 @@ describe('<PoiDistanceRow />', () => {
   it('omits via-carpark line when API returns no viaCarpark', async () => {
     mockFetch(() =>
       Promise.resolve(
-        new Response(
-          JSON.stringify({ meters: 12_000, seconds: 900, cached: false }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        ),
+        new Response(JSON.stringify({ meters: 12_000, seconds: 900, cached: false }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
       ),
     );
     render(<PoiDistanceRow index={1} poi={poi} propertyId={1} />);
@@ -88,9 +88,7 @@ describe('<PoiDistanceRow />', () => {
 
   it('shows "off-road" on 422 when no carpark fallback succeeded', async () => {
     mockFetch(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ error: 'no driving route' }), { status: 422 }),
-      ),
+      Promise.resolve(new Response(JSON.stringify({ error: 'no driving route' }), { status: 422 })),
     );
     render(<PoiDistanceRow index={1} poi={poi} propertyId={1} />);
     await waitFor(() => {

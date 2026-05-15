@@ -17,7 +17,7 @@ describe('Overpass client', () => {
     const fetchImpl = vi.fn(async () =>
       jsonResponse({
         elements: [
-          { type: 'node', id: 1, lat: 56.30, lon: -4.70 },
+          { type: 'node', id: 1, lat: 56.3, lon: -4.7 },
           { type: 'node', id: 2, lat: 56.275, lon: -4.716 },
         ],
       }),
@@ -35,9 +35,7 @@ describe('Overpass client', () => {
   it('handles way-type elements using their center', async () => {
     const fetchImpl = vi.fn(async () =>
       jsonResponse({
-        elements: [
-          { type: 'way', id: 100, center: { lat: 56.272, lon: -4.714 } },
-        ],
+        elements: [{ type: 'way', id: 100, center: { lat: 56.272, lon: -4.714 } }],
       }),
     );
     const client = createOverpassClient({
@@ -61,9 +59,10 @@ describe('Overpass client', () => {
       fetchImpl: fetchImpl as unknown as typeof fetch,
       retryDelayMs: () => 0,
     });
-    const result = await client.findNearestCarpark({ lat: 56.271, lng: -4.715 }, [
-      1000, 2000, 4000,
-    ]);
+    const result = await client.findNearestCarpark(
+      { lat: 56.271, lng: -4.715 },
+      [1000, 2000, 4000],
+    );
     expect(result).not.toBeNull();
     expect(result!.radiusMeters).toBe(4000);
     expect(fetchImpl).toHaveBeenCalledTimes(3);
@@ -102,9 +101,9 @@ describe('Overpass client', () => {
       fetchImpl: fetchImpl as unknown as typeof fetch,
       retryDelayMs: () => 0,
     });
-    await expect(
-      client.findNearestCarpark({ lat: 56.271, lng: -4.715 }, [1000]),
-    ).rejects.toThrow(OverpassError);
+    await expect(client.findNearestCarpark({ lat: 56.271, lng: -4.715 }, [1000])).rejects.toThrow(
+      OverpassError,
+    );
     expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
 });

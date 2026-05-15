@@ -75,9 +75,7 @@ async function main(): Promise<void> {
     const raw = readFileSync(EXAMPLE_PROPERTIES_FILE, 'utf8');
     const parsedJson = JSON.parse(raw) as ExamplePropertiesFile;
     if (!Array.isArray(parsedJson.properties)) {
-      throw new Error(
-        `examples/quickstart/properties/properties.json: missing "properties" array`,
-      );
+      throw new Error(`examples/quickstart/properties/properties.json: missing "properties" array`);
     }
 
     let propertiesIngested = 0;
@@ -97,9 +95,7 @@ async function main(): Promise<void> {
         enrichedAt: new Date().toISOString(),
       });
       propertiesIngested++;
-      console.log(
-        `[ingest:example]   property "${p.name}" @ ${p.lat},${p.lng} → ${p.external_id}`,
-      );
+      console.log(`[ingest:example]   property "${p.name}" @ ${p.lat},${p.lng} → ${p.external_id}`);
     }
 
     console.log(

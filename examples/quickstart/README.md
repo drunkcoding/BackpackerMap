@@ -31,10 +31,10 @@ Driving distance and the route line require `ORS_API_KEY` — see [docs/getting-
 
 The example data uses prefixed external IDs (`example/...`) so it can sit alongside any real data you ingest later:
 
-| Table | Real-ingest external_id | Example external_id |
-| --- | --- | --- |
-| `trail` | `cairngorms/loch-an-eilein.gpx` (path under `TRAILS_DIR`) | `example/tre-cime-di-lavaredo.gpx` |
-| `property` | `12345` (Airbnb listing ID) | `example/cortina-cabin` |
+| Table      | Real-ingest external_id                                   | Example external_id                |
+| ---------- | --------------------------------------------------------- | ---------------------------------- |
+| `trail`    | `cairngorms/loch-an-eilein.gpx` (path under `TRAILS_DIR`) | `example/tre-cime-di-lavaredo.gpx` |
+| `property` | `12345` (Airbnb listing ID)                               | `example/cortina-cabin`            |
 
 Re-running `npm run ingest:example` is idempotent: it upserts on these external IDs.
 

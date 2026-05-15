@@ -4,13 +4,13 @@ Prerequisites and accounts you need before running any of the [Quickstart](../RE
 
 ## Prerequisites
 
-| | Minimal demo (`npm run demo` or `docker compose up`) | Full setup (your own data) |
-| --- | --- | --- |
-| Node 20+ | ✅ for `npm run demo` only | ✅ |
-| Docker | ✅ for `docker compose up` only | optional |
-| Python 3.10+ | not needed | ✅ (for Airbnb enrichment) |
-| Playwright + Chromium | not needed | ✅ (for Booking + Google Maps scrape) |
-| ORS API key | ✅ for driving distance + route line | ✅ |
+|                       | Minimal demo (`npm run demo` or `docker compose up`) | Full setup (your own data)            |
+| --------------------- | ---------------------------------------------------- | ------------------------------------- |
+| Node 20+              | ✅ for `npm run demo` only                           | ✅                                    |
+| Docker                | ✅ for `docker compose up` only                      | optional                              |
+| Python 3.10+          | not needed                                           | ✅ (for Airbnb enrichment)            |
+| Playwright + Chromium | not needed                                           | ✅ (for Booking + Google Maps scrape) |
+| ORS API key           | ✅ for driving distance + route line                 | ✅                                    |
 
 The demo path deliberately avoids Python and Playwright so a fresh checkout works on any machine with Node (or just Docker). All of those are only needed once you start ingesting from real Airbnb / Booking / Google Maps sources.
 
@@ -75,10 +75,10 @@ cp .env.example .env       # bash / zsh / git-bash
 
 Minimum keys:
 
-| Key | Why | Default |
-| --- | --- | --- |
-| `ORS_API_KEY` | driving distance + route line | (empty — `/api/distance` returns 502) |
-| `PYTHON_BIN` | absolute path to Python ≥3.10, if your default `python3` is older | `python3` |
+| Key           | Why                                                               | Default                               |
+| ------------- | ----------------------------------------------------------------- | ------------------------------------- |
+| `ORS_API_KEY` | driving distance + route line                                     | (empty — `/api/distance` returns 502) |
+| `PYTHON_BIN`  | absolute path to Python ≥3.10, if your default `python3` is older | `python3`                             |
 
 Optional keys are listed in [`.env.example`](../.env.example) and explained inline. The ones you're most likely to set: `PORT` (default `3000`), `HTTPS_PROXY` (residential proxy for Airbnb / Booking ingest — see [docs/ingest.md](./ingest.md#optional-route-through-a-residential-proxy)), `SEARCH_PROVIDERS` (Discover mode — see [docs/discover.md](./discover.md)).
 

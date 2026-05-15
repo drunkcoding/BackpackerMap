@@ -30,13 +30,13 @@ Each one is safe to run repeatedly — they upsert by `external_id` and never du
 
 ## Where things go
 
-| Default file                    | Override env var       |
-| ------------------------------- | ---------------------- |
-| `data/trails/*.gpx`             | `TRAILS_DIR`           |
-| `data/airbnb/personal_data.json`| `AIRBNB_EXPORT_PATH`   |
-| `data/booking/cookies.json`     | `BOOKING_COOKIES_PATH` |
-| `data/google/lists.json`        | `GOOGLE_LISTS_PATH`    |
-| `db/backpackermap.sqlite`       | `DB_PATH`              |
+| Default file                     | Override env var       |
+| -------------------------------- | ---------------------- |
+| `data/trails/*.gpx`              | `TRAILS_DIR`           |
+| `data/airbnb/personal_data.json` | `AIRBNB_EXPORT_PATH`   |
+| `data/booking/cookies.json`      | `BOOKING_COOKIES_PATH` |
+| `data/google/lists.json`         | `GOOGLE_LISTS_PATH`    |
+| `db/backpackermap.sqlite`        | `DB_PATH`              |
 
 ## Optional: route through a residential proxy
 

@@ -2,12 +2,12 @@
 
 BackpackerMap ingests from four sources, all optional and independent. You can run with just one — typically trails — and add the rest later.
 
-| Source | Auth needed | Pipeline | Ingest command |
-| --- | --- | --- | --- |
-| AllTrails GPX | none (manual download) | XML parse | `npm run ingest:trails` |
-| Airbnb personal data | yes (request export) | `pyairbnb` enrichment | `npm run ingest:airbnb` |
-| Booking.com | yes (cookie export) | Playwright + JSON-LD + Nominatim | `npm run ingest:booking` |
-| Google Maps lists | none (public share) | Playwright scrape | `npm run ingest:google` |
+| Source               | Auth needed            | Pipeline                         | Ingest command           |
+| -------------------- | ---------------------- | -------------------------------- | ------------------------ |
+| AllTrails GPX        | none (manual download) | XML parse                        | `npm run ingest:trails`  |
+| Airbnb personal data | yes (request export)   | `pyairbnb` enrichment            | `npm run ingest:airbnb`  |
+| Booking.com          | yes (cookie export)    | Playwright + JSON-LD + Nominatim | `npm run ingest:booking` |
+| Google Maps lists    | none (public share)    | Playwright scrape                | `npm run ingest:google`  |
 
 For commands, proxy settings, and the all-in-one path see [docs/ingest.md](./ingest.md).
 
