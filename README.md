@@ -90,8 +90,10 @@ Node 20 + TypeScript Express backend, Vite + React 19 frontend, SQLite for state
 - [docs/data-sources.md](./docs/data-sources.md) — AllTrails, Airbnb, Booking, Google Maps setup
 - [docs/ingest.md](./docs/ingest.md) — ingest commands, proxy, fallback geocoding
 - [docs/discover.md](./docs/discover.md) — Discover mode + provider config
-- [docs/troubleshooting.md](./docs/troubleshooting.md) — symptom → fix table + CI notes
+- [docs/api.md](./docs/api.md) — HTTP API reference (`/api/properties`, `/api/distance`, etc.)
+- [docs/schema.md](./docs/schema.md) — SQLite tables + migration map
 - [docs/architecture.md](./docs/architecture.md) — layout, stack, data flow
+- [docs/troubleshooting.md](./docs/troubleshooting.md) — symptom → fix table + CI notes
 - [examples/quickstart/README.md](./examples/quickstart/README.md) — what's in the demo dataset
 
 ## License

@@ -14,8 +14,7 @@
 
 ```
 src/                       backend (TypeScript)
-  db/                      schema + repo + migrations (0001 init, 0002 candidate, 0003 pois,
-                           0004 poi_carpark, 0005 route_geometry, 0006 candidate_route_cache)
+  db/                      schema + repo + migrations 0001-0006 — see docs/schema.md
   ingest/                  gpx, trails, airbnb, booking, google + google-list,
                            geocode (Nominatim), stealth, CLI
   routing/                 ors.ts (OpenRouteService client + route cache) + overpass.ts
@@ -77,6 +76,8 @@ For development with hot-reload you still want two processes: `npm run dev` (Exp
 4. **`/api/distance`**: checks `route_cache` in SQLite. Miss → calls OpenRouteService, writes back to cache. Returns `{ meters, seconds, geometry, cached, viaCarpark? }`. POIs use the same code path with an extra Overpass-driven car-park snap step.
 5. **Hover trail row**: web app re-fetches `/api/distance` with `includeGeometry`, draws the brass route polyline.
 
-## CI
+## See also
 
-See [docs/troubleshooting.md#what-runs-in-ci](./troubleshooting.md#what-runs-in-ci).
+- [docs/api.md](./api.md) — HTTP endpoint reference (params + response shapes)
+- [docs/schema.md](./schema.md) — SQLite tables, indexes, cascade behaviour
+- [docs/troubleshooting.md#what-runs-in-ci](./troubleshooting.md#what-runs-in-ci) — CI matrix + what isn't covered

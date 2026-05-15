@@ -88,4 +88,6 @@ Optional keys are listed in [`.env.example`](../.env.example) and explained inli
 - Add your own AllTrails / Airbnb / Booking / Google Maps data: [docs/data-sources.md](./data-sources.md)
 - Run the ingest commands: [docs/ingest.md](./ingest.md)
 - Search Airbnb + Booking without logging in: [docs/discover.md](./discover.md)
+- Drive the API directly (`curl`): [docs/api.md](./api.md)
+- Inspect / query the SQLite DB: [docs/schema.md](./schema.md)
 - Something broken: [docs/troubleshooting.md](./troubleshooting.md)
