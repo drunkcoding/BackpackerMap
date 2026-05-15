@@ -66,12 +66,7 @@ The demo is intentionally tiny. To load your real AllTrails / Airbnb / Booking /
 - **Ingest commands** (incl. residential proxy and Nominatim fallback): [docs/ingest.md](./docs/ingest.md)
 - **Discover mode** (search Airbnb + Booking without logging in): [docs/discover.md](./docs/discover.md)
 
-To remove the example data before ingesting your own:
-
-```bash
-sqlite3 db/backpackermap.sqlite "DELETE FROM property WHERE external_id LIKE 'example/%';"
-sqlite3 db/backpackermap.sqlite "DELETE FROM trail WHERE external_id LIKE 'example/%';"
-```
+To remove the bundled demo rows before ingesting your own: see [docs/ingest.md → Removing example data](./docs/ingest.md#removing-example-data).
 
 ## Development
 
@@ -87,13 +82,7 @@ Useful commands: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:
 
 ## Stack & layout
 
-- Node 20+, TypeScript, Express, better-sqlite3 (backend)
-- Vite + React 19 + react-leaflet (frontend)
-- Playwright (Booking + Google Maps ingest)
-- Python 3.10+ with `pyairbnb` (Airbnb enrichment)
-- OpenRouteService (driving distance), OSM Nominatim (fallback geocoding)
-
-Full directory tree, data flow, and dependency map: [docs/architecture.md](./docs/architecture.md).
+Node 20 + TypeScript Express backend, Vite + React 19 frontend, SQLite for state, Playwright for the scraper ingests, Python 3.10+ for `pyairbnb`. Full stack list, directory tree, and data-flow diagram: [docs/architecture.md](./docs/architecture.md).
 
 ## More docs
 

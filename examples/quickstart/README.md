@@ -40,10 +40,7 @@ Re-running `npm run ingest:example` is idempotent: it upserts on these external 
 
 ## Removing the example data
 
-```bash
-sqlite3 db/backpackermap.sqlite "DELETE FROM property WHERE external_id = 'example/cortina-cabin';"
-sqlite3 db/backpackermap.sqlite "DELETE FROM trail WHERE external_id = 'example/tre-cime-di-lavaredo.gpx';"
-```
+See [docs/ingest.md → Removing example data](../../docs/ingest.md#removing-example-data) (uses a `LIKE 'example/%'` wildcard so it covers any future demo rows too).
 
 ## Attribution
 

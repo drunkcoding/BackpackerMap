@@ -52,7 +52,7 @@ The Booking ingest always applies a light stealth patch (navigator.webdriver, pl
 
 ## Booking-specific: address-based geocoding fallback
 
-Only ~19% of Booking hotels expose `geo` coordinates in their JSON-LD schema. When the coordinates are missing, the ingest falls back to **OpenStreetMap Nominatim** geocoding of the hotel's address (free, rate-limited to 1 request/sec per Nominatim's usage policy). No setup needed — it's automatic.
+When Booking's JSON-LD lacks `geo` (most hotels), the ingest falls back to OSM Nominatim. No setup. Details and the ~19% number live in [data-sources.md → Address-based geocoding fallback](./data-sources.md#address-based-geocoding-fallback).
 
 ## Removing example data
 

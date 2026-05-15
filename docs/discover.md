@@ -22,7 +22,7 @@ export HTTPS_PROXY=http://user:pass@residential.example:8000
 ## Free-by-default
 
 - **Airbnb** uses `pyairbnb.search_all_from_url()` (free, MIT). For >~30 results per search, set `HTTPS_PROXY`.
-- **Booking.com** uses headless Playwright + JSON-LD detail extraction + Nominatim address fallback. Capped at 30 detail fetches per search by default — this value is currently hardcoded in [`src/server/server.ts`](../src/server/server.ts) (`maxDetailFetches: 30`). Edit it there if you need to change the cap; not yet exposed as an env var.
+- **Booking.com** uses headless Playwright + JSON-LD detail extraction + Nominatim address fallback. Has a hard detail-fetch cap — see [Why so slow on Booking?](#why-so-slow-on-booking) below for the exact numbers and how to change them.
 
 ## Caching
 
@@ -30,4 +30,13 @@ Searches are cached per (bbox, filters, dates) for 10 minutes. Saved properties 
 
 ## Why so slow on Booking?
 
-Default is 5s delay × up to 30 hotels (90–150s worst case). The delay exists because Booking aggressively blocks rapid-fire detail-page fetches. Lower the `maxDetailFetches` in [`src/server/server.ts`](../src/server/server.ts) for shorter searches at the cost of fewer results. Subsequent identical searches are served from the 10-minute cache.
+Two hardcoded values in [`src/server/server.ts`](../src/server/server.ts) govern Booking search timing:
+
+| Constant            | Default | Effect                                                              |
+| ------------------- | ------- | ------------------------------------------------------------------- |
+| `maxDetailFetches`  | `30`    | Cap on per-search detail-page fetches (top-level Discover requests) |
+| `perRequestDelayMs` | `5_000` | Between-fetch delay; Booking blocks rapid-fire detail loads         |
+
+Worst case: `5s × 30 = 150s`; typical: 90-150s. List-mode reduces this (`maxDetailFetches: 8`, `perRequestDelayMs: 1500`, `concurrency: 3`).
+
+Lower `maxDetailFetches` for shorter searches at the cost of fewer results — neither value is yet env-var-driven, so it's an edit-and-restart change. The 10-minute search cache means identical follow-up searches are instant regardless.
