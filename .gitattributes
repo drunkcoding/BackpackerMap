@@ -1,0 +1,19 @@
+# Force LF line endings for all text files so prettier --check (with
+# endOfLine: "lf") passes on Windows CI runners, which would otherwise
+# check out files with CRLF.
+* text=auto eol=lf
+
+# Binary assets — never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+*.pdf binary
+*.zip binary
+*.gz binary
