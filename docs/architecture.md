@@ -15,31 +15,41 @@
 ```
 src/                       backend (TypeScript)
   db/                      schema + repo + migrations (0001 init, 0002 candidate, 0003 pois,
-                           0004 poi_carpark, 0005 route_geometry)
-  ingest/                  gpx, airbnb, booking, google-list, geocode (Nominatim), stealth, CLI
-  routing/                 OpenRouteService client + route cache (trails + pois)
+                           0004 poi_carpark, 0005 route_geometry, 0006 candidate_route_cache)
+  ingest/                  gpx, trails, airbnb, booking, google + google-list,
+                           geocode (Nominatim), stealth, CLI
+  routing/                 ors.ts (OpenRouteService client + route cache) + overpass.ts
+                           (car-park snap for POIs)
   search/                  Discover mode
-    providers/             pyairbnb, booking-diy, 3 stubs (apify-airbnb, apify-booking, booking-demand-api)
+    providers/             pyairbnb + booking-diy (the two live providers),
+                           airbnb-url + booking-url (URL builders consumed by the live providers),
+                           apify-airbnb + apify-booking + booking-demand-api (3 stubs)
     canonical.ts           sha1 cache key with bbox rounding
     amenities.ts           20-amenity catalog (Airbnb int + Booking facility codes)
+    price.ts               currency/price normalisation
     dispatcher.ts          Promise.allSettled aggregator + dedup
     types.ts               SearchQuery, ProviderResult, SearchProvider
   server/
     app.ts                 createApp(deps) factory — also serves web/dist when webDistDir is set
     server.ts              entry point: env wiring + listen()
     routes/search.ts       GET /api/search, POST /candidates/:id/promote
+    routes/geocode.ts      GET /api/geocode, GET /api/geocode/polygon
+    geocode/               Photon client + polygon fetcher (free-text location search)
   lib/                     pyairbnb single-listing spawn wrapper
 web/                       frontend (Vite + React workspace)
   src/App.tsx              shell
   src/api.ts               typed fetch client
-  src/components/          UI components (saved + Discover)
-  src/hooks/               useProperties, useTrails, useDistance, useSearch, useSearchFilters
+  src/components/          UI components (saved + Discover, 3-tier FilterBar)
+  src/hooks/               useProperties, useTrails, usePois, useDistance, useSearch,
+                           useSearchFilters, useLocationSelection, useVisibleCollections,
+                           useFetch
   src/lib/                 pure: formatCoord, formatDistance, formatDuration, haversine,
-                           nearestTrails, bboxHysteresis, searchQuery
+                           nearestTrails, nearestPois, nearestRadius, bboxHysteresis,
+                           pointInPolygon, searchQuery, escapeHtml
   src/icons/               inline SVG components
   src/styles/              tokens.css + globals.css + textures.css
 scripts/                   pyairbnb_enrich.py + pyairbnb_search.py + ingest_example.ts (demo loader)
-                           + test mocks
+                           + cleanup_search_cache.ts + test mocks
 examples/quickstart/       Bundled demo dataset (Tre Cime trail + Cortina fake property)
 docs/                      Reference docs (this folder)
 tests/
@@ -49,7 +59,7 @@ tests/
 data/                      (gitignored) user-supplied GPX, exports, cookies
 db/                        (gitignored) runtime SQLite + WAL/SHM sidecars
 .sisyphus/plans/           Design notes + decision logs (agent-tooling artifacts)
-Dockerfile.demo            Multi-stage demo image (Node 20 alpine, no Python/Playwright)
+Dockerfile.demo            Multi-stage demo image (Node 20 slim, no Python/Playwright at runtime)
 docker-compose.yml         One-service demo deployment
 ```
 

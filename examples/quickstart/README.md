@@ -8,7 +8,7 @@ A small, self-contained dataset for trying BackpackerMap without registering wit
 examples/quickstart/
   trails/tre-cime-di-lavaredo.gpx     # Real AllTrails export of "Three Peaks of Lavaredo"
                                       # Trailhead: 46.6184, 12.31211 (Dolomites, Italy)
-                                      # ~3,800 GPX points → ~10 km loop
+                                      # ~1,265 trackpoints → ~10 km loop
   properties/properties.json          # 1 fake property at Cortina d'Ampezzo
                                       # name: "Cortina d'Ampezzo test cabin (example)"
                                       # coords: 46.5395, 12.1352 (~25 km SW of the trailhead)
@@ -25,7 +25,7 @@ After `npm run ingest:example`:
 - Click the property pin → side panel slides in, lists "Three Peaks of Lavaredo" with the driving distance + time from Cortina to the trailhead
 - Hover the trail row → brass route line draws the actual road-snapped driving path on the map
 
-Driving distance and the route line require `ORS_API_KEY` — see [docs/getting-started.md](../../docs/getting-started.md#get-an-ors-api-key). Without it, the property pin still renders but the side panel shows `— off-road` for every trail.
+Driving distance and the route line require `ORS_API_KEY` — see [docs/getting-started.md](../../docs/getting-started.md#get-an-openrouteservice-api-key). Without it, the property pin still renders but the side panel shows `— off-road` for every trail.
 
 ## Identifiers
 
