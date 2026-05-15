@@ -73,7 +73,7 @@ For development with hot-reload you still want two processes: `npm run dev` (Exp
 1. **Ingest**: one of `ingest:{trails,airbnb,booking,google,example}` writes rows into SQLite. Each table has a `(source_id, external_id)` or `(provider, external_id)` unique key so re-ingesting upserts.
 2. **Read**: web app calls `GET /api/properties` and `GET /api/trails` on load. Pins + trail polylines render immediately.
 3. **Click property**: side panel opens, computes nearest trails by haversine distance (in-browser), then fires `POST /api/distance` for each (property, trail) pair.
-4. **`/api/distance`**: checks `route_cache` in SQLite. Miss → calls OpenRouteService, writes back to cache. Returns `{ meters, seconds, geometry, cached, viaCarpark? }`. POIs use the same code path with an extra Overpass-driven car-park snap step.
+4. **`/api/distance`**: checks `route_cache` in SQLite. Miss → calls OpenRouteService, writes back to cache. Returns `{ meters, seconds, geometry, cached, viaCarpark? }`. POIs use the same code path with an extra car-park snap step via [`src/routing/overpass.ts`](../src/routing/overpass.ts) when ORS returns no direct route.
 5. **Hover trail row**: web app re-fetches `/api/distance` with `includeGeometry`, draws the brass route polyline.
 
 ## See also

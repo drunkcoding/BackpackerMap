@@ -46,9 +46,13 @@ This doesn't happen on `npm run demo` or under Docker — both are single-port a
 
 ## What runs in CI
 
+- `prettier --check` (formatting)
 - Typecheck (root + web)
 - ESLint (root + web)
 - Unit + integration tests (`vitest`)
+- `npm run build` (web bundle compiles)
+
+Matrix: `ubuntu-latest` and `windows-latest`, Node 20. The Windows leg exists specifically to catch path / PATH-resolution issues with `python3` and the Python subprocess calls — relevant to the Windows footnotes in [getting-started.md](./getting-started.md). A separate `python-smoke` job compiles `scripts/*.py` on Python 3.10 / 3.11 / 3.12 to catch syntax regressions cheaply (pyairbnb itself is stubbed in tests).
 
 What does **not** run in CI:
 

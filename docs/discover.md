@@ -12,7 +12,8 @@ In addition to viewing your saved properties, BackpackerMap can **search Airbnb 
 ## Provider config
 
 ```bash
-# Comma-separated list of provider scopes to run (defaults to all)
+# Comma-separated list of provider scopes to run. Valid values: airbnb, booking.
+# Default = both (i.e. equivalent to the line below).
 export SEARCH_PROVIDERS=airbnb,booking
 
 # Add a residential proxy for both providers if DataDome blocks bare requests
