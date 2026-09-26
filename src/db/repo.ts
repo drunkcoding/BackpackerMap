@@ -4,8 +4,8 @@ import Database from 'better-sqlite3';
 import type { Database as DatabaseType } from 'better-sqlite3';
 import { migrate } from './schema.ts';
 
-export type SourceKind = 'alltrails' | 'airbnb' | 'booking' | 'google_maps';
-export type Provider = 'airbnb' | 'booking';
+export type SourceKind = 'alltrails' | 'airbnb' | 'booking' | 'google_maps' | 'amap' | 'ctrip';
+export type Provider = 'airbnb' | 'booking' | 'amap' | 'ctrip';
 export type TargetKind = 'trail' | 'poi';
 
 export interface TrailInput {

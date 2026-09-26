@@ -27,7 +27,10 @@ const overpass = createOverpassClient();
 const enabledProviders = (process.env['SEARCH_PROVIDERS'] ?? 'airbnb,booking')
   .split(',')
   .map((s) => s.trim())
-  .filter((s): s is ProviderName => s === 'airbnb' || s === 'booking');
+  .filter(
+    (s): s is ProviderName =>
+      s === 'airbnb' || s === 'booking' || s === 'amap' || s === 'ctrip',
+  );
 
 const allProviders: SearchProvider[] = [];
 

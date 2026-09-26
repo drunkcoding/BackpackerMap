@@ -1,4 +1,4 @@
-export type ProviderName = 'airbnb' | 'booking';
+export type ProviderName = 'airbnb' | 'booking' | 'amap' | 'ctrip';
 
 export type RoomType = 'entire' | 'private' | 'shared' | 'hotel';
 export type MealPlan = 'breakfast' | 'half_board' | 'all_inclusive';

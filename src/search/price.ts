@@ -50,11 +50,12 @@ function formatPerNight(amount: number, currency: string | null): string {
 }
 
 export function normalizePriceToTotal(
-  provider: 'airbnb' | 'booking',
+  provider: 'airbnb' | 'booking' | 'amap' | 'ctrip',
   raw: RawPrice,
   checkin: string | null,
   checkout: string | null,
 ): NormalizedPrice {
+  if (provider === 'amap' || provider === 'ctrip') return raw;
   const nights = nightsBetween(checkin, checkout);
 
   if (provider === 'airbnb') {
