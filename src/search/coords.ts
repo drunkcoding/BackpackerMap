@@ -52,3 +52,7 @@ export function gcj02ToWgs84(lng: number, lat: number): LngLat {
   const [dLng, dLat] = delta(lng, lat);
   return [lng - dLng, lat - dLat];
 }
+
+export function inChina(lng: number, lat: number): boolean {
+  return !outOfChina(lng, lat);
+}

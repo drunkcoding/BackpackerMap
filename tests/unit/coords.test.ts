@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { wgs84ToGcj02, gcj02ToWgs84 } from '../../src/search/coords.ts';
+import { wgs84ToGcj02, gcj02ToWgs84, inChina } from '../../src/search/coords.ts';
 
 describe('coords', () => {
   it('wgs84ToGcj02 matches reference point (Beijing)', () => {
@@ -24,5 +24,10 @@ describe('coords', () => {
   it('is identity outside China (e.g. Dolomites)', () => {
     expect(wgs84ToGcj02(12.3, 46.6)).toEqual([12.3, 46.6]);
     expect(gcj02ToWgs84(12.3, 46.6)).toEqual([12.3, 46.6]);
+  });
+
+  it('inChina flags mainland points but not foreign ones', () => {
+    expect(inChina(116.4, 39.9)).toBe(true);
+    expect(inChina(12.3, 46.6)).toBe(false);
   });
 });
