@@ -23,6 +23,12 @@ describe('divIconFor (saved property markers)', () => {
     expect(html).toContain('bpm-marker--booking');
   });
 
+  it('includes Amap class and SVG for amap provider', () => {
+    const html = htmlOf(divIconFor('amap', false, null));
+    expect(html).toContain('bpm-marker--amap');
+    expect(html).toContain('<svg');
+  });
+
   it('omits price pill when priceLabel is null', () => {
     const html = htmlOf(divIconFor('airbnb', false, null));
     expect(html).not.toContain('bpm-marker__price');
@@ -55,6 +61,12 @@ describe('divIconFor (saved property markers)', () => {
 describe('candidateDivIcon (Discover candidate markers)', () => {
   it('includes candidate class for muted styling', () => {
     const html = htmlOf(candidateDivIcon('airbnb', null));
+    expect(html).toContain('bpm-marker--candidate');
+  });
+
+  it('includes Amap class for amap candidate', () => {
+    const html = htmlOf(candidateDivIcon('amap', null));
+    expect(html).toContain('bpm-marker--amap');
     expect(html).toContain('bpm-marker--candidate');
   });
 

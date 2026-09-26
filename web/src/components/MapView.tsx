@@ -13,19 +13,18 @@ import L from 'leaflet';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { ApiPoi, ApiProperty, ApiTrail, ApiTrailDetail } from '../api';
 import { api } from '../api';
-import { HouseAirbnb } from '../icons/HouseAirbnb';
-import { HouseBooking } from '../icons/HouseBooking';
+import { providerHouse, type MarkerProvider } from '../icons/providerHouse';
 import type { BBox } from '../lib/bboxHysteresis';
 import { escapeHtml } from '../lib/escapeHtml';
 import type { GeoJsonGeometry } from '../lib/pointInPolygon';
 import type { GeoJsonObject } from 'geojson';
 
 export function divIconFor(
-  provider: 'airbnb' | 'booking',
+  provider: MarkerProvider,
   selected: boolean,
   priceLabel: string | null,
 ): L.DivIcon {
-  const iconSvg = renderToStaticMarkup(provider === 'airbnb' ? <HouseAirbnb /> : <HouseBooking />);
+  const iconSvg = renderToStaticMarkup(providerHouse(provider));
   const wrapperClass = `bpm-marker bpm-marker--${provider}${selected ? ' bpm-marker--selected' : ''}`;
   const priceHtml = priceLabel
     ? `<span class="bpm-marker__price">${escapeHtml(priceLabel)}</span>`
