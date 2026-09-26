@@ -1,15 +1,20 @@
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { openDb } from '../db/repo.ts';
 import { ingestTrails } from './trails.ts';
 import { dryRunAirbnb, ingestAirbnb } from './airbnb.ts';
 import { ingestBooking } from './booking.ts';
 import { ingestGoogle } from './google-list.ts';
+import { ingestCtrip } from './ctrip.ts';
+import { createNominatimGeocoder, type Geocoder } from './geocode.ts';
+import { createAmapGeocoder } from '../search/providers/amap-geocode.ts';
 
 interface Env {
   TRAILS_DIR: string;
   AIRBNB_EXPORT_PATH: string;
   BOOKING_COOKIES_PATH: string;
   GOOGLE_LISTS_PATH: string;
+  CTRIP_HOTELS_PATH: string;
   DB_PATH: string;
 }
 
@@ -19,6 +24,7 @@ function loadEnv(): Env {
     AIRBNB_EXPORT_PATH: process.env['AIRBNB_EXPORT_PATH'] ?? './data/airbnb/personal_data.json',
     BOOKING_COOKIES_PATH: process.env['BOOKING_COOKIES_PATH'] ?? './data/booking/cookies.json',
     GOOGLE_LISTS_PATH: process.env['GOOGLE_LISTS_PATH'] ?? './data/google/lists.json',
+    CTRIP_HOTELS_PATH: process.env['CTRIP_HOTELS_PATH'] ?? './data/ctrip/hotels.json',
     DB_PATH: process.env['DB_PATH'] ?? './db/backpackermap.sqlite',
   };
 }
@@ -26,7 +32,7 @@ function loadEnv(): Env {
 async function main(): Promise<void> {
   const command = process.argv[2];
   if (!command) {
-    console.error('Usage: ingest <trails|airbnb|booking|google>');
+    console.error('Usage: ingest <trails|airbnb|booking|google|ctrip>');
     process.exit(1);
   }
 
@@ -96,6 +102,43 @@ async function main(): Promise<void> {
         );
         if (result.failed.length > 0) {
           console.log(`[ingest:google] ${result.failed.length} failure(s):`);
+          for (const f of result.failed) {
+            console.log(`  - ${f.url}: ${f.message}`);
+          }
+          if (result.enriched === 0) process.exitCode = 1;
+        }
+        break;
+      }
+      case 'ctrip': {
+        const ctripPath = resolve(process.cwd(), env.CTRIP_HOTELS_PATH);
+        if (!existsSync(ctripPath)) {
+          console.log(`[ingest:ctrip] no hotels file at ${ctripPath}; nothing to do`);
+          break;
+        }
+        const amapKey = process.env['AMAP_KEY'];
+        const nominatim = createNominatimGeocoder();
+        const fetchJson = async (url: string): Promise<unknown> => {
+          const r = await fetch(url);
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        };
+        const geocoder: Geocoder = amapKey
+          ? {
+              geocode: async (a) =>
+                (await createAmapGeocoder({ apiKey: amapKey, fetchJson }).geocode(a)) ??
+                (await nominatim.geocode(a)),
+            }
+          : nominatim;
+        if (!amapKey) {
+          console.log(
+            '[ingest:ctrip] AMAP_KEY unset; geocoding Chinese addresses via Nominatim (less accurate)',
+          );
+        }
+        console.log(`[ingest:ctrip] reading hotels from ${ctripPath}`);
+        const result = await ingestCtrip(db, { listPath: ctripPath, geocoder });
+        console.log(`[ingest:ctrip] marked ${result.enriched}/${result.total} hotel(s)`);
+        if (result.failed.length > 0) {
+          console.log(`[ingest:ctrip] ${result.failed.length} failure(s):`);
           for (const f of result.failed) {
             console.log(`  - ${f.url}: ${f.message}`);
           }
