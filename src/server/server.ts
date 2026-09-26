@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { openDb, pruneSearchCache } from '../db/repo.ts';
+import { openDb, pruneSearchCache, getAmapPoiCache, putAmapPoiCache } from '../db/repo.ts';
 import { createOrsClient } from '../routing/ors.ts';
 import { createOverpassClient } from '../routing/overpass.ts';
 import { createApp } from './app.ts';
@@ -9,6 +9,7 @@ import { createPhotonClient } from './geocode/photon.ts';
 import { createPolygonFetcher } from './geocode/polygon.ts';
 import { PyairbnbProvider } from '../search/providers/pyairbnb.ts';
 import { BookingDIYProvider } from '../search/providers/booking-diy.ts';
+import { AmapProvider } from '../search/providers/amap.ts';
 import { chromium, type Browser, type BrowserContext } from 'playwright';
 import { applyStealth } from '../ingest/stealth.ts';
 import type { ProviderName, SearchProvider } from '../search/types.ts';
@@ -16,6 +17,7 @@ import type { ProviderName, SearchProvider } from '../search/types.ts';
 const dbPath = resolve(process.cwd(), process.env['DB_PATH'] ?? './db/backpackermap.sqlite');
 const port = Number(process.env['PORT'] ?? 3000);
 const apiKey = process.env['ORS_API_KEY'] ?? '';
+const amapKey = process.env['AMAP_KEY'] ?? '';
 if (!apiKey) {
   console.warn('[server] ORS_API_KEY not set; /api/distance will fail until configured');
 }
@@ -136,6 +138,26 @@ allProviders.push(
     },
   }),
 );
+
+if (amapKey) {
+  const amapCacheTtlMs = 30 * 24 * 60 * 60 * 1000;
+  allProviders.push(
+    new AmapProvider({
+      apiKey: amapKey,
+      fetchJson: async (url) => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      },
+      cache: {
+        get: (k) => getAmapPoiCache(db, k, amapCacheTtlMs),
+        put: (k, results) => putAmapPoiCache(db, k, results),
+      },
+    }),
+  );
+} else if (enabledProviders.includes('amap')) {
+  console.warn('[server] SEARCH_PROVIDERS includes amap but AMAP_KEY is unset; amap disabled');
+}
 
 const dispatcher = createDispatcher(filterEnabledProviders(allProviders, enabledProviders));
 
