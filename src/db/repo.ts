@@ -3,7 +3,6 @@ import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
 import type { Database as DatabaseType } from 'better-sqlite3';
 import { migrate } from './schema.ts';
-import type { ProviderResult } from '../search/types.ts';
 
 export type SourceKind = 'alltrails' | 'airbnb' | 'booking' | 'google_maps' | 'amap' | 'ctrip';
 export type Provider = 'airbnb' | 'booking' | 'amap' | 'ctrip';
@@ -815,34 +814,4 @@ export function promoteCandidateToProperty(
     return property;
   });
   return txn();
-}
-
-interface AmapPoiCacheRow {
-  cache_key: string;
-  results_json: string;
-  fetched_at: string;
-}
-
-export function getAmapPoiCache(
-  db: DatabaseType,
-  cacheKey: string,
-  maxAgeMs: number,
-): ProviderResult[] | null {
-  const row = db
-    .prepare<[string], AmapPoiCacheRow>('SELECT * FROM amap_poi_cache WHERE cache_key = ?')
-    .get(cacheKey);
-  if (!row) return null;
-  const ageMs = Date.now() - new Date(row.fetched_at + 'Z').getTime();
-  if (ageMs > maxAgeMs) return null;
-  return JSON.parse(row.results_json) as ProviderResult[];
-}
-
-export function putAmapPoiCache(db: DatabaseType, cacheKey: string, results: ProviderResult[]): void {
-  db.prepare(
-    `INSERT INTO amap_poi_cache (cache_key, results_json)
-     VALUES (?, ?)
-     ON CONFLICT (cache_key) DO UPDATE SET
-       results_json = excluded.results_json,
-       fetched_at = datetime('now')`,
-  ).run(cacheKey, JSON.stringify(results));
 }

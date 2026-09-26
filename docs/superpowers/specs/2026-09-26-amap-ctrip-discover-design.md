@@ -5,6 +5,17 @@
 - **Tracking issue**: [drunkcoding/BackpackerMap#1](https://github.com/drunkcoding/BackpackerMap/issues/1)
 - **Feature**: Add Amap (高德) and Ctrip (携程) as Discover-mode live-search providers surfacing hotels + 民宿 (B&B) in mainland China.
 
+## 0. Revision 2026-09-26 (v2 — role reframe) — SUPERSEDES conflicting sections below
+
+Per updated intent, the two services swap roles:
+
+- **Ctrip = accommodation source (manual, via hotel URL).** The user searches Ctrip and pastes a **hotel URL** into `data/ctrip/hotels.json`; `npm run ingest:ctrip` fetches the (anonymously reachable) **detail** page, extracts **name + address**, geocodes the address via **Amap** → WGS-84 coords, and upserts a `property` (provider `ctrip`). **Fallback:** if the URL is anti-bot-blocked or extraction fails, use optional `name`/`address` fields supplied in the same entry. No Ctrip *list* scraping (that surface is a signed-XHR shell).
+- **Amap = China geocoding + routing backend (NOT accommodation).** (a) Geocode Ctrip addresses → coords; (b) compute **driving distance/time** (Amap `/v3/direction/driving`) from each hotel to trails/POIs, used **instead of OpenRouteService when both endpoints are in China**.
+
+**Dropped from v1:** the Amap POI hotel-search Discover provider and its accommodation markers. **Reused:** `coords.ts`, Amap geocoder, `AMAP_KEY`, migration 0007. Empirical basis: Ctrip *detail* pages return HTTP 200 with name+address but no coordinates; the *list* page and the official Trip.com Open Platform are dead ends (see issue #1 / spike #2).
+
+---
+
 ## 1. Summary & motivation
 
 BackpackerMap merges accommodation with trails/POIs on one map. Its existing sources

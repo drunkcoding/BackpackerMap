@@ -25,12 +25,4 @@ describe('migration 0007', () => {
     db.close();
   });
 
-  it('creates amap_poi_cache', () => {
-    const db = openDb(':memory:');
-    const row = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='amap_poi_cache'")
-      .get();
-    expect(row).toBeTruthy();
-    db.close();
-  });
 });

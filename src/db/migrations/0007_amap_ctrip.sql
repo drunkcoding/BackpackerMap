@@ -1,5 +1,4 @@
--- Widen provider/kind CHECK constraints for the China Discover providers, and add
--- a long-TTL Amap POI result cache (Amap free quota is ~100 polygon calls/day).
+-- Widen provider/kind CHECK constraints to allow the China accommodation provider (ctrip).
 -- Rebuild order: candidate -> source -> property. foreign_keys is OFF (runner);
 -- ids are preserved so route_cache / candidate_route_cache stay valid.
 
@@ -62,10 +61,3 @@ INSERT INTO property_new
 DROP TABLE property;
 ALTER TABLE property_new RENAME TO property;
 CREATE INDEX idx_property_geo ON property(lat, lng);
-
-CREATE TABLE amap_poi_cache (
-  cache_key    TEXT PRIMARY KEY,
-  results_json TEXT NOT NULL,
-  fetched_at   TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX idx_amap_poi_cache_fetched ON amap_poi_cache(fetched_at);
