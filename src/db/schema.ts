@@ -12,6 +12,7 @@ const MIGRATIONS = [
   '0004_poi_carpark.sql',
   '0005_route_geometry.sql',
   '0006_candidate_route_cache.sql',
+  '0007_amap_ctrip.sql',
 ];
 
 export function migrate(db: Database): void {
