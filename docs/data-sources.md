@@ -11,6 +11,8 @@ BackpackerMap ingests from four sources, all optional and independent. You can r
 
 For commands, proxy settings, and the all-in-one path see [docs/ingest.md](./ingest.md).
 
+> **China accommodation (Amap)** is a **Discover-mode** provider, not an ingest source — it surfaces live hotels + 民宿 on the map rather than importing a saved list, and needs an `AMAP_KEY`. See [docs/discover.md](./discover.md#amap-china-accommodation). Ctrip (携程) is a planned follow-up (issue #1).
+
 ---
 
 ## AllTrails GPX

@@ -12,9 +12,14 @@ In addition to viewing your saved properties, BackpackerMap can **search Airbnb 
 ## Provider config
 
 ```bash
-# Comma-separated list of provider scopes to run. Valid values: airbnb, booking.
-# Default = both (i.e. equivalent to the line below).
+# Comma-separated list of provider scopes to run. Valid values: airbnb, booking, amap.
+# Default = airbnb,booking.
 export SEARCH_PROVIDERS=airbnb,booking
+
+# China accommodation (hotels + 民宿) via Amap's official POI API. Add `amap` to
+# SEARCH_PROVIDERS and set a real-name-verified 高德开放平台 Web Service key:
+#   export SEARCH_PROVIDERS=airbnb,booking,amap
+export AMAP_KEY=your-amap-web-service-key
 
 # Add a residential proxy for both providers if DataDome blocks bare requests
 export HTTPS_PROXY=http://user:pass@residential.example:8000
@@ -24,6 +29,17 @@ export HTTPS_PROXY=http://user:pass@residential.example:8000
 
 - **Airbnb** uses `pyairbnb.search_all_from_url()` (free, MIT). For >~30 results per search, set `HTTPS_PROXY`.
 - **Booking.com** uses headless Playwright + JSON-LD detail extraction + Nominatim address fallback. Has a hard detail-fetch cap — see [Why so slow on Booking?](#why-so-slow-on-booking) below for the exact numbers and how to change them.
+
+## Amap (China accommodation)
+
+`amap` adds mainland-China hotels + 民宿 (B&B) to Discover, sourced from Amap's official Web Service POI API (`/v3/place/polygon`, accommodation typecodes `100100` hotels + `100200` inns/民宿).
+
+- **Key required.** Set `AMAP_KEY` to a 高德开放平台 Web Service key. Creating one needs real-name (实名) verification — a mainland-China ID + Alipay. Without a key, `amap` is skipped with a server log warning even if listed in `SEARCH_PROVIDERS`.
+- **Coordinates.** Amap returns GCJ-02; results are converted to WGS-84 before rendering, so pins land in the correct spot on the OSM basemap.
+- **Quota.** The free individual quota is ~100 POI-search calls/day. Results are cached for 30 days per grid-snapped area, and a daily circuit breaker returns no results (logged) once the cap is reached — the other providers keep working.
+- **Routing caveat.** Driving distance/route lines rely on OpenRouteService (OSM); China coverage is patchy, so distances may degrade to straight-line for China pins.
+
+> **Ctrip (携程) is not yet available.** Its hotel list and coordinates sit behind a signed, fingerprinted API (and the official Trip.com Open Platform is partner-gated with no geo-search or coordinates). Tracked as a follow-up spike in issue #1.
 
 ## Caching
 
