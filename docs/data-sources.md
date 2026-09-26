@@ -1,6 +1,6 @@
 # Data sources
 
-BackpackerMap ingests from four sources, all optional and independent. You can run with just one — typically trails — and add the rest later.
+BackpackerMap ingests from five sources, all optional and independent. You can run with just one — typically trails — and add the rest later.
 
 | Source               | Auth needed            | Pipeline                         | Ingest command           |
 | -------------------- | ---------------------- | -------------------------------- | ------------------------ |
@@ -8,10 +8,11 @@ BackpackerMap ingests from four sources, all optional and independent. You can r
 | Airbnb personal data | yes (request export)   | `pyairbnb` enrichment            | `npm run ingest:airbnb`  |
 | Booking.com          | yes (cookie export)    | Playwright + JSON-LD + Nominatim | `npm run ingest:booking` |
 | Google Maps lists    | none (public share)    | Playwright scrape                | `npm run ingest:google`  |
+| Ctrip hotels (China) | none (paste hotel URLs) | fetch detail + Amap geocode      | `npm run ingest:ctrip`   |
 
 For commands, proxy settings, and the all-in-one path see [docs/ingest.md](./ingest.md).
 
-> **China accommodation (Amap)** is a **Discover-mode** provider, not an ingest source — it surfaces live hotels + 民宿 on the map rather than importing a saved list, and needs an `AMAP_KEY`. See [docs/discover.md](./discover.md#amap-china-accommodation). Ctrip (携程) is a planned follow-up (issue #1).
+> **China note.** Ctrip is the China accommodation source (see below). **Amap** is not an accommodation source — it geocodes Ctrip addresses and powers China driving distances (see [docs/discover.md](./discover.md)). Both use `AMAP_KEY`.
 
 ---
 
@@ -134,3 +135,25 @@ sqlite3 db/backpackermap.sqlite "DELETE FROM poi WHERE collection = 'Dolomites';
 ### Showing POI collections on the map
 
 POI collection visibility is per-browser (stored in `localStorage` under `bpm:visiblePoiCollections`) and **defaults to off** — a freshly-ingested collection won't appear on the map until you toggle its chip on in the POI filter row of the side panel. If POIs aren't appearing after a successful `ingest:google`, check the chip state first.
+
+---
+
+## Ctrip hotels (China)
+
+Discover (Airbnb/Booking) barely covers mainland China, so Ctrip hotels are added manually — you do the searching on Ctrip, the app marks them.
+
+1. On <https://hotels.ctrip.com/>, open a hotel and copy its URL (e.g. `https://hotels.ctrip.com/hotels/4889292.html`).
+2. Create `data/ctrip/hotels.json` (override the path with `CTRIP_HOTELS_PATH`):
+
+```json
+[
+  { "url": "https://hotels.ctrip.com/hotels/4889292.html" },
+  { "url": "https://hotels.ctrip.com/hotels/12345678.html", "name": "青旅名称", "address": "城市区街道门牌" }
+]
+```
+
+3. Run `npm run ingest:ctrip`.
+
+For each entry the ingest fetches the hotel's detail page, extracts the **name** (page title) and **address**, then geocodes the address via **Amap** (`AMAP_KEY`, falling back to Nominatim) to WGS-84 coordinates, and upserts a `property` (provider `ctrip`). If the URL fetch is blocked by anti-bot, the optional `name`/`address` fields are used as a fallback; if neither yields an address, the entry is skipped with a warning.
+
+Set `AMAP_KEY` for accurate Chinese-address geocoding — the same key powers China driving distances (see [docs/discover.md](./discover.md)).
