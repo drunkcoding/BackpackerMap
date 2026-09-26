@@ -1,6 +1,6 @@
 export interface ApiProperty {
   id: number;
-  provider: 'airbnb' | 'booking' | 'amap';
+  provider: 'airbnb' | 'booking' | 'ctrip';
   externalId: string;
   name: string;
   url: string;
@@ -54,7 +54,7 @@ export interface ApiPoi {
 
 export interface ApiCandidate {
   id: number;
-  provider: 'airbnb' | 'booking' | 'amap';
+  provider: 'airbnb' | 'booking' | 'ctrip';
   externalId: string;
   name: string;
   url: string;

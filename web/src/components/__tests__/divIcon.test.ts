@@ -23,9 +23,9 @@ describe('divIconFor (saved property markers)', () => {
     expect(html).toContain('bpm-marker--booking');
   });
 
-  it('includes Amap class and SVG for amap provider', () => {
-    const html = htmlOf(divIconFor('amap', false, null));
-    expect(html).toContain('bpm-marker--amap');
+  it('includes Ctrip class and SVG for ctrip provider', () => {
+    const html = htmlOf(divIconFor('ctrip', false, null));
+    expect(html).toContain('bpm-marker--ctrip');
     expect(html).toContain('<svg');
   });
 
@@ -64,9 +64,9 @@ describe('candidateDivIcon (Discover candidate markers)', () => {
     expect(html).toContain('bpm-marker--candidate');
   });
 
-  it('includes Amap class for amap candidate', () => {
-    const html = htmlOf(candidateDivIcon('amap', null));
-    expect(html).toContain('bpm-marker--amap');
+  it('includes Ctrip class for ctrip candidate', () => {
+    const html = htmlOf(candidateDivIcon('ctrip', null));
+    expect(html).toContain('bpm-marker--ctrip');
     expect(html).toContain('bpm-marker--candidate');
   });
 

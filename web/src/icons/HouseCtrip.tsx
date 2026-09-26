@@ -1,4 +1,4 @@
-export function HouseAmap({ size = 28 }: { size?: number }) {
+export function HouseCtrip({ size = 28 }: { size?: number }) {
   return (
     <svg
       width={size}

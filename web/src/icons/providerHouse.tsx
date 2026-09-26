@@ -1,11 +1,11 @@
 import { HouseAirbnb } from './HouseAirbnb';
 import { HouseBooking } from './HouseBooking';
-import { HouseAmap } from './HouseAmap';
+import { HouseCtrip } from './HouseCtrip';
 
-export type MarkerProvider = 'airbnb' | 'booking' | 'amap';
+export type MarkerProvider = 'airbnb' | 'booking' | 'ctrip';
 
 export function providerHouse(provider: MarkerProvider) {
   if (provider === 'airbnb') return <HouseAirbnb />;
-  if (provider === 'amap') return <HouseAmap />;
+  if (provider === 'ctrip') return <HouseCtrip />;
   return <HouseBooking />;
 }

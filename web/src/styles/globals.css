@@ -726,9 +726,9 @@ body {
   color: var(--booking-blue);
 }
 
-.bpm-marker--amap .bpm-marker__icon svg,
-.bpm-marker--amap > svg {
-  color: var(--amap-teal);
+.bpm-marker--ctrip .bpm-marker__icon svg,
+.bpm-marker--ctrip > svg {
+  color: var(--ctrip-teal);
 }
 
 .bpm-marker__price {
