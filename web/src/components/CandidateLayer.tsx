@@ -2,15 +2,11 @@ import L from 'leaflet';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Marker } from 'react-leaflet';
 import type { ApiCandidate, ApiProperty } from '../api';
-import { HouseAirbnb } from '../icons/HouseAirbnb';
-import { HouseBooking } from '../icons/HouseBooking';
+import { providerHouse, type MarkerProvider } from '../icons/providerHouse';
 import { escapeHtml } from '../lib/escapeHtml';
 
-export function candidateDivIcon(
-  provider: 'airbnb' | 'booking',
-  priceLabel: string | null,
-): L.DivIcon {
-  const iconSvg = renderToStaticMarkup(provider === 'airbnb' ? <HouseAirbnb /> : <HouseBooking />);
+export function candidateDivIcon(provider: MarkerProvider, priceLabel: string | null): L.DivIcon {
+  const iconSvg = renderToStaticMarkup(providerHouse(provider));
   const priceHtml = priceLabel
     ? `<span class="bpm-marker__price">${escapeHtml(priceLabel)}</span>`
     : '';
@@ -55,7 +51,7 @@ export function CandidateLayer({
 
 export function filterUnsavedCandidates(
   candidates: ApiCandidate[],
-  savedProperties: Array<{ provider: 'airbnb' | 'booking'; externalId: string }>,
+  savedProperties: Array<{ provider: MarkerProvider; externalId: string }>,
 ): ApiCandidate[] {
   const savedKeys = new Set(savedProperties.map((p) => `${p.provider}:${p.externalId}`));
   return candidates.filter((c) => !savedKeys.has(`${c.provider}:${c.externalId}`));

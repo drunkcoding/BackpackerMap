@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDb, pruneSearchCache } from '../db/repo.ts';
 import { createOrsClient } from '../routing/ors.ts';
+import { createAmapRouter, createRegionRoutingClient } from '../routing/amap.ts';
 import { createOverpassClient } from '../routing/overpass.ts';
 import { createApp } from './app.ts';
 import { createDispatcher, filterEnabledProviders } from '../search/dispatcher.ts';
@@ -22,6 +23,13 @@ if (!apiKey) {
 
 const db = openDb(dbPath);
 const ors = createOrsClient({ apiKey });
+const amapKey = process.env['AMAP_KEY'] ?? '';
+const routing = amapKey
+  ? createRegionRoutingClient({ ors, amap: createAmapRouter({ apiKey: amapKey }) })
+  : ors;
+if (amapKey) {
+  console.log('[server] Amap driving routing enabled for China (OpenRouteService elsewhere)');
+}
 const overpass = createOverpassClient();
 
 const enabledProviders = (process.env['SEARCH_PROVIDERS'] ?? 'airbnb,booking')
@@ -145,7 +153,7 @@ const polygon = createPolygonFetcher();
 const webDistDir = process.env['WEB_DIST_DIR'] ?? resolve(here, '..', '..', 'web', 'dist');
 const app = createApp({
   db,
-  ors,
+  ors: routing,
   overpass,
   searchDispatcher: dispatcher,
   searchCacheTtlMs: cacheTtlMs,

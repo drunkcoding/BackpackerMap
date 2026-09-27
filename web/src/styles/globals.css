@@ -726,6 +726,11 @@ body {
   color: var(--booking-blue);
 }
 
+.bpm-marker--ctrip .bpm-marker__icon svg,
+.bpm-marker--ctrip > svg {
+  color: var(--ctrip-teal);
+}
+
 .bpm-marker__price {
   display: inline-block;
   padding: 1px 6px;

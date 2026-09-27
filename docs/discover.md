@@ -25,6 +25,13 @@ export HTTPS_PROXY=http://user:pass@residential.example:8000
 - **Airbnb** uses `pyairbnb.search_all_from_url()` (free, MIT). For >~30 results per search, set `HTTPS_PROXY`.
 - **Booking.com** uses headless Playwright + JSON-LD detail extraction + Nominatim address fallback. Has a hard detail-fetch cap — see [Why so slow on Booking?](#why-so-slow-on-booking) below for the exact numbers and how to change them.
 
+## China (Ctrip + Amap)
+
+Discover (Airbnb/Booking) has poor mainland-China coverage, so China is handled **outside** Discover:
+
+- **Ctrip hotels** are added as saved properties via `npm run ingest:ctrip` (you paste hotel URLs) — see [docs/data-sources.md → Ctrip hotels](./data-sources.md#ctrip-hotels-china).
+- **Amap** is the China **geocoding + driving-distance** backend: it geocodes Ctrip addresses to coordinates and provides drive distances to trails/POIs in place of OpenRouteService. It is **not** an accommodation search provider. Requires an `AMAP_KEY`.
+
 ## Caching
 
 Searches are cached per (bbox, filters, dates) for 10 minutes. Saved properties are persisted in the same `property` table as the wishlist; promoted candidates carry a `promoted_from_candidate_id` link back to the candidate row.

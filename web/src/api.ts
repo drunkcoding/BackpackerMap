@@ -1,6 +1,6 @@
 export interface ApiProperty {
   id: number;
-  provider: 'airbnb' | 'booking';
+  provider: 'airbnb' | 'booking' | 'ctrip';
   externalId: string;
   name: string;
   url: string;
@@ -54,7 +54,7 @@ export interface ApiPoi {
 
 export interface ApiCandidate {
   id: number;
-  provider: 'airbnb' | 'booking';
+  provider: 'airbnb' | 'booking' | 'ctrip';
   externalId: string;
   name: string;
   url: string;
@@ -117,10 +117,7 @@ export const api = {
     targetId: number,
     signal?: AbortSignal,
   ) => {
-    const originParam =
-      propertyId < 0
-        ? `candidateId=${-propertyId}`
-        : `propertyId=${propertyId}`;
+    const originParam = propertyId < 0 ? `candidateId=${-propertyId}` : `propertyId=${propertyId}`;
     return getJson<ApiDistance>(
       `/api/distance?${originParam}&targetKind=${targetKind}&targetId=${targetId}`,
       signal ? { signal } : {},
