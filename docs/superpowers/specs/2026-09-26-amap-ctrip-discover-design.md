@@ -9,10 +9,10 @@
 
 Per updated intent, the two services swap roles:
 
-- **Ctrip = accommodation source (manual, via hotel URL).** The user searches Ctrip and pastes a **hotel URL** into `data/ctrip/hotels.json`; `npm run ingest:ctrip` fetches the (anonymously reachable) **detail** page, extracts **name + address**, geocodes the address via **Amap** → WGS-84 coords, and upserts a `property` (provider `ctrip`). **Fallback:** if the URL is anti-bot-blocked or extraction fails, use optional `name`/`address` fields supplied in the same entry. No Ctrip *list* scraping (that surface is a signed-XHR shell).
+- **Ctrip = accommodation source (manual, via hotel URL).** The user searches Ctrip and pastes a **hotel URL** into `data/ctrip/hotels.json`; `npm run ingest:ctrip` fetches the (anonymously reachable) **detail** page, extracts **name + address**, geocodes the address via **Amap** → WGS-84 coords, and upserts a `property` (provider `ctrip`). **Fallback:** if the URL is anti-bot-blocked or extraction fails, use optional `name`/`address` fields supplied in the same entry. No Ctrip _list_ scraping (that surface is a signed-XHR shell).
 - **Amap = China geocoding + routing backend (NOT accommodation).** (a) Geocode Ctrip addresses → coords; (b) compute **driving distance/time** (Amap `/v3/direction/driving`) from each hotel to trails/POIs, used **instead of OpenRouteService when both endpoints are in China**.
 
-**Dropped from v1:** the Amap POI hotel-search Discover provider and its accommodation markers. **Reused:** `coords.ts`, Amap geocoder, `AMAP_KEY`, migration 0007. Empirical basis: Ctrip *detail* pages return HTTP 200 with name+address but no coordinates; the *list* page and the official Trip.com Open Platform are dead ends (see issue #1 / spike #2).
+**Dropped from v1:** the Amap POI hotel-search Discover provider and its accommodation markers. **Reused:** `coords.ts`, Amap geocoder, `AMAP_KEY`, migration 0007. Empirical basis: Ctrip _detail_ pages return HTTP 200 with name+address but no coordinates; the _list_ page and the official Trip.com Open Platform are dead ends (see issue #1 / spike #2).
 
 ---
 
@@ -26,17 +26,18 @@ with the usual driving-distance-to-trails treatment where routing permits.
 
 ## 2. Decisions locked (from brainstorming)
 
-| # | Decision | Choice |
-|---|----------|--------|
-| 1 | Integration surface | **Discover live-search** (not saved/wishlist ingest) |
-| 2 | Scope | **Both Amap + Ctrip** in this iteration |
-| 3 | Amap access | **Official Web Service POI API** (user can obtain a real-name-verified key) |
-| 4 | Ctrip coordinates | **Scrape list page + geocode the address** (no signed-API reverse-engineering) |
-| 5 | Amap quota defense | **Long-TTL Amap result cache + in-memory daily circuit breaker** |
+| #   | Decision            | Choice                                                                         |
+| --- | ------------------- | ------------------------------------------------------------------------------ |
+| 1   | Integration surface | **Discover live-search** (not saved/wishlist ingest)                           |
+| 2   | Scope               | **Both Amap + Ctrip** in this iteration                                        |
+| 3   | Amap access         | **Official Web Service POI API** (user can obtain a real-name-verified key)    |
+| 4   | Ctrip coordinates   | **Scrape list page + geocode the address** (no signed-API reverse-engineering) |
+| 5   | Amap quota defense  | **Long-TTL Amap result cache + in-memory daily circuit breaker**               |
 
 ## 3. Verified research (do not re-derive)
 
 ### Amap Web Service POI API
+
 - **Endpoint** (bbox fit): `GET https://restapi.amap.com/v3/place/polygon?polygon=<tlLng>,<tlLat>|<brLng>,<brLat>&types=<codes>&offset=25&page=<n>&key=<KEY>`. A rectangle is passed as the top-left + bottom-right vertex pair. (v5 equivalent: `/v5/place/polygon`, `page_size`≤25 × `page_num`≤100.)
 - **Accommodation typecodes** (official amap_poicode): hotels = `100100` (100101 luxury … 100105 economy chain); inns/hostels ≈ B&B = `100200` (incl. 100201 youth hostel); parent `100000` = all lodging. No dedicated 民宿 typecode — 民宿 fall under `100200`; refine with `keywords=民宿` if needed. **v1 uses `types=100100|100200`.**
 - **Coordinates**: returns GCJ-02.
@@ -45,6 +46,7 @@ with the usual driving-distance-to-trails treatment where routing permits.
 - **POI fields used**: `id`, `name`, `location` ("lng,lat"), `typecode`, `address`, `tel`, `photos[].url`.
 
 ### Ctrip
+
 - **Anonymous list page works** with the canonical six-param URL: `https://hotels.ctrip.com/hotels/list?flexType=1&cityId=<n>&provinceId=0&districtId=0&countryId=1&checkin=…&checkout=…`. The simplified `?city=…` form redirects to `passport.ctrip.com` login (bot gate keyed on URL completeness).
 - List data lives in the `window.IBU_HOTEL` React global (`initData.firstPageList.hotelList.list[]`), exposing name / score / price / address — **but NO lat/lng and NO hotelId in the DOM**.
 - Exact coordinates sit behind a signed, `eleven`-fingerprinted, font-encrypted mobile API → **out of scope** for v1; we geocode the address instead.
@@ -53,9 +55,11 @@ with the usual driving-distance-to-trails treatment where routing permits.
 ## 4. Architecture
 
 ### 4.1 Data flow (unchanged pipeline)
+
 `GET /api/search?north=…` → `canonicaliseQuery` → aggregate 10-min cache → `dispatcher.search(query)` runs enabled providers via `Promise.allSettled` → each returns `ProviderResult[]` **with WGS-84 coords** → dedup by `provider:externalId` → route `upsertCandidate`s each → pins render. A failing provider yields only a warning; others still return (existing behavior in [`dispatcher.ts`](../../../src/search/dispatcher.ts) and [`routes/search.ts`](../../../src/server/routes/search.ts)).
 
 ### 4.2 New files
+
 - `src/search/coords.ts` — pure `wgs84ToGcj02()` / `gcj02ToWgs84()` (+ `bd09` guards). The published coordtransform algorithm. Unit-tested.
 - `src/search/providers/amap.ts` — `AmapProvider implements SearchProvider` (`provider = 'amap'`), injected `{ apiKey, fetchJson, cache }`.
 - `src/search/providers/amap-url.ts` — builds the `/v3/place/polygon` request from a WGS-84 bbox (converts corners to GCJ-02).
@@ -65,6 +69,7 @@ with the usual driving-distance-to-trails treatment where routing permits.
 - `src/db/migrations/0007_amap_ctrip.sql` — rebuild `source`, `property`, `candidate` to widen `CHECK` constraints (+`amap`,`ctrip`), following the [`0003_pois.sql`](../../../src/db/migrations/0003_pois.sql) pattern.
 
 ### 4.3 Changed files
+
 - `src/search/types.ts` — `ProviderName` → `'airbnb' | 'booking' | 'amap' | 'ctrip'`.
 - `src/server/server.ts` — widen the `SEARCH_PROVIDERS` filter (line 30); read `AMAP_KEY`; push `AmapProvider` + `CtripProvider` into `allProviders` (Ctrip reuses the shared Playwright `fetchHtml` closure).
 - `src/search/price.ts` — add `amap` (no price) / `ctrip` (label passthrough) branches.
@@ -72,7 +77,9 @@ with the usual driving-distance-to-trails treatment where routing permits.
 - `.env.example`, `docs/discover.md`, `docs/data-sources.md`.
 
 ### 4.4 Coordinate handling (bidirectional — critical)
+
 The map/bbox is WGS-84; Amap's API expects **GCJ-02 input**.
+
 - **Amap**: convert bbox corners WGS-84→GCJ-02 for the `polygon` param; convert each returned POI GCJ-02→WGS-84 before emitting.
 - **Ctrip**: geocoded coords are already WGS-84 (Amap geocoder converts internally; Nominatim is native WGS-84) — no extra step.
 - All conversion isolated in `coords.ts`; providers never emit non-WGS-84.
@@ -93,6 +100,7 @@ The map/bbox is WGS-84; Amap's API expects **GCJ-02 input**.
 ## 7. Amap quota strategy (the binding constraint)
 
 ~100 calls/day vs one search per map pan → must minimize calls:
+
 - **Amap-only result cache** keyed on **(grid-snapped bbox, types) only** — deliberately ignoring dates/guests/price/filters, because POIs do not depend on them. Long TTL (accommodation POIs are stable; e.g. 30 days). Implementation may reuse the `search_cache` table with a dedicated `'amap'` scope + reduced key, or a small dedicated store — decided in the plan.
 - **Grid snap**: quantize bbox to a coarse grid so nearby pans reuse one cache entry.
 - **Daily circuit breaker**: in-memory per-day counter; when near the cap, `AmapProvider.search` returns `[]` + a warning rather than erroring. Single-user app makes this workable.

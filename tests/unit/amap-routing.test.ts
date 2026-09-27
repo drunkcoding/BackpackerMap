@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { createAmapRouter, createRegionRoutingClient, type RoutingClient } from '../../src/routing/amap.ts';
+import {
+  createAmapRouter,
+  createRegionRoutingClient,
+  type RoutingClient,
+} from '../../src/routing/amap.ts';
 import type { DrivingDistance } from '../../src/routing/ors.ts';
 
 function jsonFetch(body: unknown, capture?: (url: string) => void): typeof fetch {
@@ -45,7 +49,10 @@ describe('createAmapRouter', () => {
         url = u;
       }),
     });
-    const res = await router.getDrivingDistance({ lat: 39.98, lng: 116.48 }, { lat: 40.0, lng: 116.47 });
+    const res = await router.getDrivingDistance(
+      { lat: 39.98, lng: 116.48 },
+      { lat: 40.0, lng: 116.47 },
+    );
     const origin = new URL(url).searchParams.get('origin')!;
     const oLng = Number(origin.split(',')[0]);
     expect(oLng).toBeGreaterThan(116.48);

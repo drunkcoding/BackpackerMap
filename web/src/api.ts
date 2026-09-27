@@ -117,10 +117,7 @@ export const api = {
     targetId: number,
     signal?: AbortSignal,
   ) => {
-    const originParam =
-      propertyId < 0
-        ? `candidateId=${-propertyId}`
-        : `propertyId=${propertyId}`;
+    const originParam = propertyId < 0 ? `candidateId=${-propertyId}` : `propertyId=${propertyId}`;
     return getJson<ApiDistance>(
       `/api/distance?${originParam}&targetKind=${targetKind}&targetId=${targetId}`,
       signal ? { signal } : {},

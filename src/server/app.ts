@@ -213,7 +213,10 @@ export function createApp(deps: AppDeps): Express {
         return { lat: row.lat, lng: row.lng };
       }
       const row = deps.db
-        .prepare<[number], { lat: number; lng: number }>('SELECT lat, lng FROM candidate WHERE id = ?')
+        .prepare<
+          [number],
+          { lat: number; lng: number }
+        >('SELECT lat, lng FROM candidate WHERE id = ?')
         .get(id);
       if (!row) return null;
       return { lat: row.lat, lng: row.lng };
@@ -226,9 +229,7 @@ export function createApp(deps: AppDeps): Express {
     }
 
     const cacheDeps =
-      fromOrigin === 'property'
-        ? makePropertyCacheDeps(deps.db)
-        : makeCandidateCacheDeps(deps.db);
+      fromOrigin === 'property' ? makePropertyCacheDeps(deps.db) : makeCandidateCacheDeps(deps.db);
 
     const lookupTargetCoords = (tKind: 'trail' | 'poi', tId: number): LatLng | null => {
       if (tKind === 'trail') {
@@ -393,12 +394,7 @@ interface DistanceFallbackResult {
 }
 
 interface CacheWriter {
-  (
-    fromId: number,
-    targetKind: 'trail' | 'poi',
-    targetId: number,
-    row: CachedRouteRow,
-  ): void;
+  (fromId: number, targetKind: 'trail' | 'poi', targetId: number, row: CachedRouteRow): void;
 }
 
 interface CacheDeps {

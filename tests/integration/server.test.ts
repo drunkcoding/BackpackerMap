@@ -498,9 +498,7 @@ describe('GET /api/distance — candidateId (Discover candidates)', () => {
   it('unknown candidateId returns 404 candidate not found', async () => {
     seedWithCandidate();
     const app = createApp({ db, ors });
-    const res = await request(app).get(
-      `/api/distance?candidateId=999&targetKind=trail&targetId=1`,
-    );
+    const res = await request(app).get(`/api/distance?candidateId=999&targetKind=trail&targetId=1`);
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: 'candidate not found' });
     expect(orsCalls).toBe(0);

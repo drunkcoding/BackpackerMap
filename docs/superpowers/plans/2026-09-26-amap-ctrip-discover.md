@@ -17,6 +17,7 @@
 ## File structure
 
 **New**
+
 - `src/search/coords.ts` — pure GCJ-02 ↔ WGS-84 transforms.
 - `src/search/providers/amap-url.ts` — build `/v3/place/polygon` request from a WGS-84 bbox.
 - `src/search/providers/amap.ts` — `AmapProvider`.
@@ -28,6 +29,7 @@
 - Tests under `tests/unit/`.
 
 **Modified**
+
 - `src/search/types.ts` — `ProviderName` union.
 - `src/db/repo.ts` — `Provider`/`SourceKind` unions; Amap-cache repo fns.
 - `src/db/schema.ts` — register migration.
@@ -44,6 +46,7 @@
 ## Task 1: Coordinate transform (`coords.ts`)
 
 **Files:**
+
 - Create: `src/search/coords.ts`
 - Test: `tests/unit/coords.test.ts`
 
@@ -58,13 +61,13 @@ describe('coords', () => {
   it('wgs84ToGcj02 matches reference point (Beijing)', () => {
     const [lng, lat] = wgs84ToGcj02(116.404, 39.915);
     expect(lng).toBeCloseTo(116.41024, 4);
-    expect(lat).toBeCloseTo(39.91640, 4);
+    expect(lat).toBeCloseTo(39.9164, 4);
   });
 
   it('gcj02ToWgs84 matches reference point (Beijing)', () => {
     const [lng, lat] = gcj02ToWgs84(116.404, 39.915);
     expect(lng).toBeCloseTo(116.39776, 4);
-    expect(lat).toBeCloseTo(39.91360, 4);
+    expect(lat).toBeCloseTo(39.9136, 4);
   });
 
   it('round-trips within ~1e-5 inside China', () => {
@@ -114,7 +117,8 @@ function transformLat(lng: number, lat: number): number {
 }
 
 function transformLng(lng: number, lat: number): number {
-  let ret = 300 + lng + 2 * lat + 0.1 * lng * lng + 0.1 * lng * lat + 0.1 * Math.sqrt(Math.abs(lng));
+  let ret =
+    300 + lng + 2 * lat + 0.1 * lng * lng + 0.1 * lng * lat + 0.1 * Math.sqrt(Math.abs(lng));
   ret += ((20 * Math.sin(6 * lng * PI) + 20 * Math.sin(2 * lng * PI)) * 2) / 3;
   ret += ((20 * Math.sin(lng * PI) + 40 * Math.sin((lng / 3) * PI)) * 2) / 3;
   ret += ((150 * Math.sin((lng / 12) * PI) + 300 * Math.sin((lng / 30) * PI)) * 2) / 3;
@@ -163,6 +167,7 @@ git commit -m "feat(search): add GCJ-02<->WGS-84 coordinate transforms"
 ## Task 2: Widen provider/source type unions
 
 **Files:**
+
 - Modify: `src/search/types.ts:1`
 - Modify: `src/db/repo.ts:7-8`
 - Modify: `src/search/price.ts:52-57`
@@ -171,6 +176,7 @@ git commit -m "feat(search): add GCJ-02<->WGS-84 coordinate transforms"
 - [ ] **Step 1: Widen `ProviderName`**
 
 In `src/search/types.ts`, line 1:
+
 ```ts
 export type ProviderName = 'airbnb' | 'booking' | 'amap' | 'ctrip';
 ```
@@ -178,6 +184,7 @@ export type ProviderName = 'airbnb' | 'booking' | 'amap' | 'ctrip';
 - [ ] **Step 2: Widen repo unions**
 
 In `src/db/repo.ts`, lines 7-8:
+
 ```ts
 export type SourceKind = 'alltrails' | 'airbnb' | 'booking' | 'google_maps' | 'amap' | 'ctrip';
 export type Provider = 'airbnb' | 'booking' | 'amap' | 'ctrip';
@@ -186,6 +193,7 @@ export type Provider = 'airbnb' | 'booking' | 'amap' | 'ctrip';
 - [ ] **Step 3: Make `normalizePriceToTotal` accept the new providers**
 
 In `src/search/price.ts`, change the signature (line 53) and add an early passthrough at the top of the body (after line 58's `nights`):
+
 ```ts
 export function normalizePriceToTotal(
   provider: 'airbnb' | 'booking' | 'amap' | 'ctrip',
@@ -202,11 +210,14 @@ export function normalizePriceToTotal(
 - [ ] **Step 4: Widen the `SEARCH_PROVIDERS` filter**
 
 In `src/server/server.ts`, lines 27-30:
+
 ```ts
 const enabledProviders = (process.env['SEARCH_PROVIDERS'] ?? 'airbnb,booking')
   .split(',')
   .map((s) => s.trim())
-  .filter((s): s is ProviderName => s === 'airbnb' || s === 'booking' || s === 'amap' || s === 'ctrip');
+  .filter(
+    (s): s is ProviderName => s === 'airbnb' || s === 'booking' || s === 'amap' || s === 'ctrip',
+  );
 ```
 
 - [ ] **Step 5: Verify typecheck passes**
@@ -226,6 +237,7 @@ git commit -m "feat(search): widen provider/source unions for amap + ctrip"
 ## Task 3: Migration — widen CHECKs + Amap cache table
 
 **Files:**
+
 - Create: `src/db/migrations/0007_amap_ctrip.sql`
 - Modify: `src/db/schema.ts:8-15`
 - Test: `tests/integration/migration-0007.test.ts`
@@ -245,9 +257,19 @@ describe('migration 0007', () => {
     expect(() => createSource(db, 'amap')).not.toThrow();
     expect(() => createSource(db, 'ctrip')).not.toThrow();
     const c = upsertCandidate(db, {
-      provider: 'amap', externalId: 'B0FFABC123', name: '杭州西湖民宿', url: 'https://amap.com',
-      lat: 30.24, lng: 120.15, priceLabel: null, priceAmount: null, currency: null,
-      photoUrl: null, rating: null, reviewCount: null, rawJson: '{}',
+      provider: 'amap',
+      externalId: 'B0FFABC123',
+      name: '杭州西湖民宿',
+      url: 'https://amap.com',
+      lat: 30.24,
+      lng: 120.15,
+      priceLabel: null,
+      priceAmount: null,
+      currency: null,
+      photoUrl: null,
+      rating: null,
+      reviewCount: null,
+      rawJson: '{}',
     });
     expect(c.id).toBeGreaterThan(0);
     db.close();
@@ -255,9 +277,9 @@ describe('migration 0007', () => {
 
   it('creates amap_poi_cache', () => {
     const db = openDb(':memory:');
-    const row = db.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='amap_poi_cache'",
-    ).get();
+    const row = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='amap_poi_cache'")
+      .get();
     expect(row).toBeTruthy();
     db.close();
   });
@@ -353,6 +375,7 @@ CREATE INDEX idx_amap_poi_cache_fetched ON amap_poi_cache(fetched_at);
 - [ ] **Step 4: Register the migration**
 
 In `src/db/schema.ts`, add to the `MIGRATIONS` array (after line 14):
+
 ```ts
   '0006_candidate_route_cache.sql',
   '0007_amap_ctrip.sql',
@@ -378,6 +401,7 @@ git commit -m "feat(db): migration 0007 - widen provider CHECKs + amap_poi_cache
 ## Task 4: Amap request builder (`amap-url.ts`)
 
 **Files:**
+
 - Create: `src/search/providers/amap-url.ts`
 - Test: `tests/unit/amap-url.test.ts`
 
@@ -467,6 +491,7 @@ git commit -m "feat(search): amap polygon URL builder (bbox->GCJ-02)"
 ## Task 5: Amap provider (`amap.ts`)
 
 **Files:**
+
 - Create: `src/search/providers/amap.ts`
 - Test: `tests/unit/amap-provider.test.ts`
 
@@ -480,16 +505,27 @@ import type { SearchQuery } from '../../src/search/types.ts';
 
 const query: SearchQuery = {
   bbox: { north: 30.3, south: 30.2, east: 120.2, west: 120.1 },
-  zoom: 13, checkin: null, checkout: null,
-  guests: { adults: 2, children: 0, infants: 0 }, currency: 'CNY', maxResults: 25,
+  zoom: 13,
+  checkin: null,
+  checkout: null,
+  guests: { adults: 2, children: 0, infants: 0 },
+  currency: 'CNY',
+  maxResults: 25,
 };
 
 function fakeAmapResponse() {
   return {
     status: '1',
     pois: [
-      { id: 'B0FFABC', name: '西湖民宿', location: '120.150000,30.250000',
-        typecode: '100200', address: '龙井路1号', tel: '', photos: [{ url: 'http://p/1.jpg' }] },
+      {
+        id: 'B0FFABC',
+        name: '西湖民宿',
+        location: '120.150000,30.250000',
+        typecode: '100200',
+        address: '龙井路1号',
+        tel: '',
+        photos: [{ url: 'http://p/1.jpg' }],
+      },
     ],
   };
 }
@@ -516,7 +552,10 @@ describe('AmapProvider', () => {
     let calls = 0;
     const provider = new AmapProvider({
       apiKey: 'K',
-      fetchJson: async () => { calls++; return fakeAmapResponse(); },
+      fetchJson: async () => {
+        calls++;
+        return fakeAmapResponse();
+      },
       cache: { get: () => null, put: () => {} },
       dailyLimit: 0, // breaker open immediately
     });
@@ -527,12 +566,29 @@ describe('AmapProvider', () => {
 
   it('serves from cache without calling the API', async () => {
     let calls = 0;
-    const cached = [{ provider: 'amap', externalId: 'X', name: 'n', url: 'u',
-      lat: 30, lng: 120, priceLabel: null, priceAmount: null, currency: null,
-      photoUrl: null, rating: null, reviewCount: null, rawJson: '{}' }];
+    const cached = [
+      {
+        provider: 'amap',
+        externalId: 'X',
+        name: 'n',
+        url: 'u',
+        lat: 30,
+        lng: 120,
+        priceLabel: null,
+        priceAmount: null,
+        currency: null,
+        photoUrl: null,
+        rating: null,
+        reviewCount: null,
+        rawJson: '{}',
+      },
+    ];
     const provider = new AmapProvider({
       apiKey: 'K',
-      fetchJson: async () => { calls++; return fakeAmapResponse(); },
+      fetchJson: async () => {
+        calls++;
+        return fakeAmapResponse();
+      },
       cache: { get: () => cached, put: () => {} },
     });
     const results = await provider.search(query);
@@ -551,7 +607,12 @@ Expected: FAIL — module not found.
 
 ```ts
 // src/search/providers/amap.ts
-import { ProviderError, type ProviderResult, type SearchProvider, type SearchQuery } from '../types.ts';
+import {
+  ProviderError,
+  type ProviderResult,
+  type SearchProvider,
+  type SearchQuery,
+} from '../types.ts';
 import { gcj02ToWgs84 } from '../coords.ts';
 import { buildAmapPolygonUrl } from './amap-url.ts';
 
@@ -577,7 +638,11 @@ interface AmapPoi {
   tel?: string | string[];
   photos?: Array<{ url?: string }>;
 }
-interface AmapResponse { status?: string; info?: string; pois?: AmapPoi[] }
+interface AmapResponse {
+  status?: string;
+  info?: string;
+  pois?: AmapPoi[];
+}
 
 const GRID = 100; // ~0.01deg (~1km) cache grid
 function gridKey(bbox: SearchQuery['bbox'], types: string): string {
@@ -624,13 +689,22 @@ export class AmapProvider implements SearchProvider {
     const results: ProviderResult[] = [];
     const maxPages = Math.max(1, Math.ceil(query.maxResults / 25));
     for (let page = 1; page <= maxPages; page++) {
-      const url = buildAmapPolygonUrl(bbox, { key: this.options.apiKey, types: this.types, page, offset: 25 });
+      const url = buildAmapPolygonUrl(bbox, {
+        key: this.options.apiKey,
+        types: this.types,
+        page,
+        offset: 25,
+      });
       this.callCount++;
       let body: AmapResponse;
       try {
         body = (await this.options.fetchJson(url)) as AmapResponse;
       } catch (err) {
-        throw new ProviderError(`amap fetch failed: ${err instanceof Error ? err.message : String(err)}`, this.name, err);
+        throw new ProviderError(
+          `amap fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+          this.name,
+          err,
+        );
       }
       if (body.status !== '1') {
         throw new ProviderError(`amap error: ${body.info ?? 'unknown'}`, this.name);
@@ -683,6 +757,7 @@ git commit -m "feat(search): AmapProvider with GCJ-02 conversion, cache + circui
 ## Task 6: Amap cache repo functions
 
 **Files:**
+
 - Modify: `src/db/repo.ts` (append near the search-cache helpers, ~line 698)
 - Test: `tests/unit/amap-cache.test.ts`
 
@@ -696,9 +771,23 @@ import { openDb, getAmapPoiCache, putAmapPoiCache } from '../../src/db/repo.ts';
 describe('amap_poi_cache repo', () => {
   it('round-trips results and respects TTL', () => {
     const db = openDb(':memory:');
-    const results = [{ provider: 'amap', externalId: 'A', name: 'n', url: 'u',
-      lat: 30, lng: 120, priceLabel: null, priceAmount: null, currency: null,
-      photoUrl: null, rating: null, reviewCount: null, rawJson: '{}' }];
+    const results = [
+      {
+        provider: 'amap',
+        externalId: 'A',
+        name: 'n',
+        url: 'u',
+        lat: 30,
+        lng: 120,
+        priceLabel: null,
+        priceAmount: null,
+        currency: null,
+        photoUrl: null,
+        rating: null,
+        reviewCount: null,
+        rawJson: '{}',
+      },
+    ];
     putAmapPoiCache(db, 'k1', results);
     expect(getAmapPoiCache(db, 'k1', 60_000)).toEqual(results);
     expect(getAmapPoiCache(db, 'k1', -1)).toBeNull(); // expired
@@ -716,10 +805,13 @@ Expected: FAIL — `getAmapPoiCache` not exported.
 - [ ] **Step 3: Write the implementation**
 
 Add the import to the **existing top import block** of `src/db/repo.ts`:
+
 ```ts
 import type { ProviderResult } from '../search/types.ts';
 ```
+
 Then **append the interface + functions at the end of the file**:
+
 ```ts
 interface AmapPoiCacheRow {
   cache_key: string;
@@ -773,6 +865,7 @@ git commit -m "feat(db): amap_poi_cache repo helpers"
 ## Task 7: Amap geocoder (`amap-geocode.ts`)
 
 **Files:**
+
 - Create: `src/search/providers/amap-geocode.ts`
 - Test: `tests/unit/amap-geocode.test.ts`
 
@@ -865,12 +958,14 @@ git commit -m "feat(search): Amap geocoder (Geocoder-compatible, GCJ-02->WGS-84)
 ## Task 8: Wire Amap into the server
 
 **Files:**
+
 - Modify: `src/server/server.ts` (imports + env + registration)
 - Modify: `.env.example`
 
 - [ ] **Step 1: Add imports + env + registration**
 
 In `src/server/server.ts`:
+
 ```ts
 // with the other provider imports (~line 11)
 import { AmapProvider } from '../search/providers/amap.ts';
@@ -904,6 +999,7 @@ if (amapKey) {
 - [ ] **Step 2: Document the env var**
 
 Append to `.env.example`:
+
 ```bash
 # Amap (高德) Web Service key for China Discover POI search (real-name-verified key).
 # Free individual quota is ~100 polygon-search calls/day; results are cached 30 days.
@@ -937,6 +1033,7 @@ git commit -m "feat(server): register AmapProvider behind AMAP_KEY"
 ## Task 9: Ctrip URL builder (`ctrip-url.ts`)
 
 **Files:**
+
 - Create: `src/search/providers/ctrip-url.ts`
 - Test: `tests/unit/ctrip-url.test.ts`
 
@@ -952,8 +1049,12 @@ import type { SearchQuery } from '../../src/search/types.ts';
 
 const q: SearchQuery = {
   bbox: { north: 30.35, south: 30.15, east: 120.25, west: 120.05 }, // Hangzhou
-  zoom: 12, checkin: '2026-10-01', checkout: '2026-10-02',
-  guests: { adults: 2, children: 0, infants: 0 }, currency: 'CNY', maxResults: 25,
+  zoom: 12,
+  checkin: '2026-10-01',
+  checkout: '2026-10-02',
+  guests: { adults: 2, children: 0, infants: 0 },
+  currency: 'CNY',
+  maxResults: 25,
 };
 
 describe('ctrip-url', () => {
@@ -1008,7 +1109,10 @@ export function bboxToCityId(bbox: BBox): number {
   let bestD = Infinity;
   for (const c of CITY_TABLE) {
     const d = (c.lat - cLat) ** 2 + (c.lng - cLng) ** 2;
-    if (d < bestD) { bestD = d; best = c; }
+    if (d < bestD) {
+      bestD = d;
+      best = c;
+    }
   }
   return best.cityId;
 }
@@ -1043,6 +1147,7 @@ git commit -m "feat(search): Ctrip canonical list-URL builder + bbox->cityId"
 ## Task 10: Ctrip provider (`ctrip.ts`)
 
 **Files:**
+
 - Create: `src/search/providers/ctrip.ts`
 - Test: `tests/unit/ctrip-provider.test.ts`
 - Fixture: `tests/fixtures/ctrip-list.html`
@@ -1052,9 +1157,11 @@ git commit -m "feat(search): Ctrip canonical list-URL builder + bbox->cityId"
 - [ ] **Step 1: Capture a live fixture + confirm structure**
 
 Run (real network):
+
 ```bash
 node -e "import('playwright').then(async ({chromium})=>{const b=await chromium.launch();const p=await b.newPage();await p.goto('https://hotels.ctrip.com/hotels/list?flexType=1&cityId=17&provinceId=0&districtId=0&countryId=1&checkin=2026-10-01&checkout=2026-10-02',{waitUntil:'networkidle'});const h=await p.content();require('fs').writeFileSync('tests/fixtures/ctrip-list.html',h);await b.close();console.log('bytes',h.length);})"
 ```
+
 Confirm the HTML contains `window.IBU_HOTEL` and a `initData.firstPageList.hotelList.list[]` with `base.hotelName` + `position.address`. If not present / redirected to `passport.ctrip.com`, record the actual shape and adjust Steps 3-4.
 
 - [ ] **Step 2: Write the failing test (against the fixture)**
@@ -1069,8 +1176,12 @@ import type { SearchQuery } from '../../src/search/types.ts';
 const html = readFileSync('tests/fixtures/ctrip-list.html', 'utf8');
 const q: SearchQuery = {
   bbox: { north: 30.35, south: 30.15, east: 120.25, west: 120.05 },
-  zoom: 12, checkin: '2026-10-01', checkout: '2026-10-02',
-  guests: { adults: 2, children: 0, infants: 0 }, currency: 'CNY', maxResults: 10,
+  zoom: 12,
+  checkin: '2026-10-01',
+  checkout: '2026-10-02',
+  guests: { adults: 2, children: 0, infants: 0 },
+  currency: 'CNY',
+  maxResults: 10,
 };
 
 describe('CtripProvider', () => {
@@ -1113,11 +1224,20 @@ Expected: FAIL — module not found.
 ```ts
 // src/search/providers/ctrip.ts
 import { createHash } from 'node:crypto';
-import { ProviderError, type ProviderResult, type SearchProvider, type SearchQuery } from '../types.ts';
+import {
+  ProviderError,
+  type ProviderResult,
+  type SearchProvider,
+  type SearchQuery,
+} from '../types.ts';
 import type { Geocoder } from '../../ingest/geocode.ts';
 import { buildCtripListUrl } from './ctrip-url.ts';
 
-export interface CtripCard { name: string; address: string; priceLabel: string | null; }
+export interface CtripCard {
+  name: string;
+  address: string;
+  priceLabel: string | null;
+}
 export interface CtripProviderOptions {
   fetchHtml: (url: string) => Promise<string>;
   geocoder: Geocoder;
@@ -1129,7 +1249,11 @@ export function parseCtripListHtml(html: string): CtripCard[] {
   const m = html.match(/window\.IBU_HOTEL\s*=\s*(\{[\s\S]*?\});\s*<\/script>/);
   if (!m) return [];
   let data: unknown;
-  try { data = JSON.parse(m[1]!); } catch { return []; }
+  try {
+    data = JSON.parse(m[1]!);
+  } catch {
+    return [];
+  }
   const list = (data as any)?.initData?.firstPageList?.hotelList?.list;
   if (!Array.isArray(list)) return [];
   const cards: CtripCard[] = [];
@@ -1137,7 +1261,8 @@ export function parseCtripListHtml(html: string): CtripCard[] {
     const name = it?.base?.hotelName ?? it?.base?.hotelEnName;
     const address = it?.position?.address ?? it?.position?.cityName;
     if (!name || !address) continue;
-    const priceLabel = it?.ctripTrace?.listPrice_cx != null ? `¥${it.ctripTrace.listPrice_cx}` : null;
+    const priceLabel =
+      it?.ctripTrace?.listPrice_cx != null ? `¥${it.ctripTrace.listPrice_cx}` : null;
     cards.push({ name: String(name), address: String(address), priceLabel });
   }
   return cards;
@@ -1159,7 +1284,11 @@ export class CtripProvider implements SearchProvider {
     try {
       html = await this.options.fetchHtml(url);
     } catch (err) {
-      throw new ProviderError(`ctrip fetch failed: ${err instanceof Error ? err.message : String(err)}`, this.name, err);
+      throw new ProviderError(
+        `ctrip fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+        this.name,
+        err,
+      );
     }
     if (/passport\.ctrip\.com/.test(html)) {
       throw new ProviderError('ctrip redirected to login (anti-bot gate)', this.name);
@@ -1208,6 +1337,7 @@ git commit -m "feat(search): CtripProvider (list scrape + geocode)"
 ## Task 11: Wire Ctrip into the server
 
 **Files:**
+
 - Modify: `src/server/server.ts`
 
 > Ctrip reuses the shared Playwright `fetchHtml` closure already built for Booking (`bookingFetchOnce` + retry). Its geocoder is the Amap geocoder (accurate for Chinese addresses) with a Nominatim fallback.
@@ -1215,6 +1345,7 @@ git commit -m "feat(search): CtripProvider (list scrape + geocode)"
 - [ ] **Step 1: Add imports + registration**
 
 In `src/server/server.ts`:
+
 ```ts
 import { CtripProvider } from '../search/providers/ctrip.ts';
 import { createAmapGeocoder } from '../search/providers/amap-geocode.ts';
@@ -1276,6 +1407,7 @@ git commit -m "feat(server): register CtripProvider (shared browser + Amap/Nomin
 ## Task 12: Provider unions + candidate markers
 
 **Files:**
+
 - Modify: `web/src/api.ts:2,57`
 - Create: `web/src/icons/HouseAmap.tsx`, `web/src/icons/HouseCtrip.tsx`
 - Modify: `web/src/components/CandidateLayer.tsx:9-13,58`
@@ -1284,13 +1416,15 @@ git commit -m "feat(server): register CtripProvider (shared browser + Amap/Nomin
 - [ ] **Step 1: Widen the web provider unions**
 
 In `web/src/api.ts`, change both occurrences (line 2 `ApiProperty.provider`, line 57 `ApiCandidate.provider`):
+
 ```ts
-  provider: 'airbnb' | 'booking' | 'amap' | 'ctrip';
+provider: 'airbnb' | 'booking' | 'amap' | 'ctrip';
 ```
 
 - [ ] **Step 2: Add marker icons**
 
 `web/src/icons/HouseAmap.tsx` and `web/src/icons/HouseCtrip.tsx` — copy the structure of `web/src/icons/HouseBooking.tsx`, changing only the `fill`/accent so each source is visually distinct (e.g. Amap teal, Ctrip blue). Example:
+
 ```tsx
 // web/src/icons/HouseAmap.tsx
 export function HouseAmap() {
@@ -1301,35 +1435,50 @@ export function HouseAmap() {
   );
 }
 ```
+
 (Repeat for `HouseCtrip` with `#1a6fd0`.)
 
 - [ ] **Step 3: Make the marker icon map provider-aware**
 
 In `web/src/components/CandidateLayer.tsx`, replace the ternary (lines 9-13) and widen the helper type (line 58):
+
 ```tsx
 import { HouseAmap } from '../icons/HouseAmap';
 import { HouseCtrip } from '../icons/HouseCtrip';
 
 type CandidateProvider = 'airbnb' | 'booking' | 'amap' | 'ctrip';
 const ICONS: Record<CandidateProvider, () => JSX.Element> = {
-  airbnb: HouseAirbnb, booking: HouseBooking, amap: HouseAmap, ctrip: HouseCtrip,
+  airbnb: HouseAirbnb,
+  booking: HouseBooking,
+  amap: HouseAmap,
+  ctrip: HouseCtrip,
 };
 
-export function candidateDivIcon(provider: CandidateProvider, priceLabel: string | null): L.DivIcon {
+export function candidateDivIcon(
+  provider: CandidateProvider,
+  priceLabel: string | null,
+): L.DivIcon {
   const Icon = ICONS[provider];
   const iconSvg = renderToStaticMarkup(<Icon />);
   // ...rest unchanged...
 }
 ```
+
 Also change `filterUnsavedCandidates` param (line 58) to `Array<{ provider: CandidateProvider; externalId: string }>`.
 
 - [ ] **Step 4: Add marker colours**
 
 In `web/src/styles/globals.css`, add class rules mirroring `.bpm-marker--booking`:
+
 ```css
-.bpm-marker--amap { --bpm-marker-accent: #0a9b8a; }
-.bpm-marker--ctrip { --bpm-marker-accent: #1a6fd0; }
+.bpm-marker--amap {
+  --bpm-marker-accent: #0a9b8a;
+}
+.bpm-marker--ctrip {
+  --bpm-marker-accent: #1a6fd0;
+}
 ```
+
 (Match whatever custom-property/border pattern the existing `--airbnb`/`--booking` rules use.)
 
 - [ ] **Step 5: Verify web build + typecheck**
@@ -1351,6 +1500,7 @@ git commit -m "feat(web): render amap + ctrip candidate markers"
 ## Task 13: Documentation
 
 **Files:**
+
 - Modify: `docs/discover.md`, `docs/data-sources.md`
 
 - [ ] **Step 1: Update Discover provider config docs**
@@ -1377,6 +1527,7 @@ git commit -m "docs: document amap + ctrip Discover providers"
 - [ ] Confirm `SEARCH_PROVIDERS=airbnb,booking` (default) behaviour is unchanged (Amap/Ctrip only active when explicitly enabled + `AMAP_KEY` set).
 
 ## Notes for the implementer
+
 - **Do not** commit real API keys. `AMAP_KEY` lives only in `.env`.
 - If Ctrip's list structure differs from Task 10's assumption, the fixture-first step is your source of truth — adjust parser + fixture together; do not fake coordinates.
 - Amap quota is genuinely tight; keep the 30-day cache and circuit breaker intact.

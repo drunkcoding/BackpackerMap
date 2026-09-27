@@ -54,7 +54,11 @@ describe('ingestCtrip', () => {
     const res = await ingestCtrip(db, {
       geocoder: fixedGeocoder,
       entries: [
-        { url: 'https://hotels.ctrip.com/hotels/555.html', name: '备用酒店', address: '北京市朝阳区' },
+        {
+          url: 'https://hotels.ctrip.com/hotels/555.html',
+          name: '备用酒店',
+          address: '北京市朝阳区',
+        },
       ],
       fetchHtml: async () => {
         throw new Error('403 anti-bot');

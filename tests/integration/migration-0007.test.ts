@@ -24,5 +24,4 @@ describe('migration 0007', () => {
     expect(c.id).toBeGreaterThan(0);
     db.close();
   });
-
 });

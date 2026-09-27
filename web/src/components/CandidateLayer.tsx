@@ -5,10 +5,7 @@ import type { ApiCandidate, ApiProperty } from '../api';
 import { providerHouse, type MarkerProvider } from '../icons/providerHouse';
 import { escapeHtml } from '../lib/escapeHtml';
 
-export function candidateDivIcon(
-  provider: MarkerProvider,
-  priceLabel: string | null,
-): L.DivIcon {
+export function candidateDivIcon(provider: MarkerProvider, priceLabel: string | null): L.DivIcon {
   const iconSvg = renderToStaticMarkup(providerHouse(provider));
   const priceHtml = priceLabel
     ? `<span class="bpm-marker__price">${escapeHtml(priceLabel)}</span>`
